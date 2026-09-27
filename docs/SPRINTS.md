@@ -32,15 +32,15 @@
 
 #### SETUP
 
-- [ ] SETUP-1 — Create all 8 migrations in dependency order: `departments`, `users`, `students`, `courses`, `enrollments`, `payments`, `clearances`, `document_requests`, `audit_logs`. Add composite unique constraints per SPEC §4. (M)
-- [ ] SETUP-2 — Add `rate_per_unit_centavos` to `config/fees.php` (or `config/app.php`) and expose it via `.env`. Document the money-handling convention (integer centavos, never floats) in a code comment in that config file. (S)
-- [ ] SETUP-3 — Install and configure Laravel Sanctum. Configure CORS (`config/cors.php`) to allow the React repo's origin via an env var (`FRONTEND_URL`). (S)
-- [ ] SETUP-4 — Create Eloquent models for all 8 tables. Add the `role` discriminator logic to `User` (no separate subtype models — STI via `role` column). Add `$fillable`, casts, and relationships per SPEC §4. (M)
-- [ ] SETUP-5 — Create per-role Policy classes (StudentPolicy, RegistrarPolicy, CashierPolicy, DepartmentStaffPolicy, AdminPolicy) with a base `role` check. Wire them to `AuthServiceProvider`. (S)
-- [ ] SETUP-6 — Add a global middleware that checks `is_active` on every authenticated request and returns `403 ACCOUNT_DEACTIVATED` if false (SPEC §6 Edge Case 6, A-9). (S)
-- [ ] SETUP-7 — Add a global middleware that reads `role` live from `users.role` on every request (never cached in token) (A-8). (S)
-- [ ] SETUP-8 — Create database seeders for departments and a set of test users (one per role, plus 2–3 students). (S)
-- [ ] SETUP-9 — Set up factories for all models. (S)
+- [x] SETUP-1 — Create all 8 migrations in dependency order: `departments`, `users`, `students`, `courses`, `enrollments`, `payments`, `clearances`, `document_requests`, `audit_logs`. Add composite unique constraints per SPEC §4. (M)
+- [x] SETUP-2 — Add `rate_per_unit_centavos` to `config/fees.php` (or `config/app.php`) and expose it via `.env`. Document the money-handling convention (integer centavos, never floats) in a code comment in that config file. (S)
+- [x] SETUP-3 — Install and configure Laravel Sanctum. Configure CORS (`config/cors.php`) to allow the React repo's origin via an env var (`FRONTEND_URL`). (S)
+- [x] SETUP-4 — Create Eloquent models for all 8 tables. Add the `role` discriminator logic to `User` (no separate subtype models — STI via `role` column). Add `$fillable`, casts, and relationships per SPEC §4. (M)
+- [x] SETUP-5 — Create per-role Policy classes (StudentPolicy, RegistrarPolicy, CashierPolicy, DepartmentStaffPolicy, AdminPolicy) with a base `role` check. Wire them to `AuthServiceProvider`. (S)
+- [x] SETUP-6 — Add a global middleware that checks `is_active` on every authenticated request and returns `403 ACCOUNT_DEACTIVATED` if false (SPEC §6 Edge Case 6, A-9). (S)
+- [x] SETUP-7 — Add a global middleware that reads `role` live from `users.role` on every request (never cached in token) (A-8). (S)
+- [x] SETUP-8 — Create database seeders for departments and a set of test users (one per role, plus 2–3 students). (S)
+- [x] SETUP-9 — Set up factories for all models. (S)
 
 #### FR-1 — Auth
 
