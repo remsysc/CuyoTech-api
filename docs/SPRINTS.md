@@ -44,21 +44,21 @@
 
 #### FR-1 — Auth
 
-- [ ] FR-1.1 — Create `POST /api/login`: accept `student_number_or_email` + `password`; look up by `student_number` (via `students` join) or `email` (direct on `users`); return `200 { token, role, redirect }` on success. (M)
-- [ ] FR-1.2 — Return `401 { error: "INVALID_CREDENTIALS" }` when credentials don't match. (S)
-- [ ] FR-1.3 — Return `403 { error: "ACCOUNT_DEACTIVATED" }` when credentials match but `is_active=false`. (S)
-- [ ] FR-1.4 — Create `POST /api/logout`: revoke only the current token; return 204. (S)
-- [ ] FR-1.5 — Apply default `throttle:api` (60 req/min/token) to all `/api/*` routes (A-6). (S)
-- [ ] FR-1.6 — Test: valid login returns 200 + token + role; wrong password returns 401; deactivated account returns 403 (maps directly to FR-1 acceptance criteria). (S)
+- [x] FR-1.1 — Create `POST /api/login`: accept `student_number_or_email` + `password`; look up by `student_number` (via `students` join) or `email` (direct on `users`); return `200 { token, role, redirect }` on success. (M)
+- [x] FR-1.2 — Return `401 { error: "INVALID_CREDENTIALS" }` when credentials don't match. (S)
+- [x] FR-1.3 — Return `403 { error: "ACCOUNT_DEACTIVATED" }` when credentials match but `is_active=false`. (S)
+- [x] FR-1.4 — Create `POST /api/logout`: revoke only the current token; return 204. (S)
+- [x] FR-1.5 — Apply default `throttle:api` (60 req/min/token) to all `/api/*` routes (A-6). (S)
+- [x] FR-1.6 — Test: valid login returns 200 + token + role; wrong password returns 401; deactivated account returns 403 (maps directly to FR-1 acceptance criteria). (S)
 
 ### Definition of Done
 
-- [ ] All 8 migrations run cleanly on a fresh DB.
-- [ ] `POST /api/login` returns 200 with token and role for a valid active user.
-- [ ] Wrong password returns 401 `INVALID_CREDENTIALS`.
-- [ ] Deactivated account returns 403 `ACCOUNT_DEACTIVATED`.
-- [ ] `POST /api/logout` revokes the token (subsequent request returns 401).
-- [ ] Pint passes on all modified PHP files.
+- [x] All 8 migrations run cleanly on a fresh DB.
+- [x] `POST /api/login` returns 200 with token and role for a valid active user.
+- [x] Wrong password returns 401 `INVALID_CREDENTIALS`.
+- [x] Deactivated account returns 403 `ACCOUNT_DEACTIVATED`.
+- [x] `POST /api/logout` revokes the token (subsequent request returns 401).
+- [x] Pint passes on all modified PHP files.
 
 ### Depends on
 
@@ -265,7 +265,7 @@ Sprint 1 (SETUP, FR-1)
 
 | ID    | Priority | Sprint | Status  |
 | ----- | -------- | ------ | ------- |
-| FR-1  | P0       | 1      | —       |
+| FR-1  | P0       | 1      | DONE    |
 | FR-2  | P0       | 2      | —       |
 | FR-3  | P0       | 2      | —       |
 | FR-4  | —        | —      | DROPPED |
