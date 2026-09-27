@@ -186,80 +186,256 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 
 ## 8. API Contracts
 
-```
-POST /api/login
-Request:  { "student_number_or_email": "2023-00123", "password": "..." }
-Response: { "token": "...", "role": "student", "redirect": "/student/dashboard" }
+### Auth
 
-POST /api/logout
-Request:  (no body — Bearer token in Authorization header)
-Response: 204 No Content
-  -> revokes the current Sanctum token
-```
+**`POST /api/login`**
 
-```
-GET /api/student/profile
-Response: { "student_number": "2023-00123", "name": "...", "program": "BSCS", "year_level": 3, "status": "active" }
+- **Request:**
+    ```json
+    {
+        "student_number_or_email": "2023-00123",
+        "password": "..."
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "token": "...",
+        "role": "student",
+        "redirect": "/student/dashboard"
+    }
+    ```
 
-GET /api/student/subjects?school_year=2026-2027&semester=1
-Response: [ { "course_code": "CCS112", "title": "...", "units": 3, "status": "enrolled" } ]
+**`POST /api/logout`**
 
-GET /api/student/grades?school_year=2026-2027&semester=1
-Response: [ { "course_code": "CCS112", "title": "...", "grade": 1.75 } ]
-  -> only returns rows where enrollments.status = "completed"
-```
+- **Request:** (no body — Bearer token in Authorization header)
+- **Response:** `204 No Content`
+    - _Note:_ revokes the current Sanctum token
 
-```
-POST /api/registrar/enrollments
-Request:  { "student_id": 14, "course_id": 7, "school_year": "2026-2027", "semester": 1 }
-Response: { "id": 88, "status": "enrolled", "charge_applied_centavos": 900000 }
-  -> charge_applied_centavos = course.units × rate_per_unit_centavos, added to the student's balance in the same transaction
+### Student Portal
 
-PATCH /api/registrar/enrollments/{id}/grade
-Request:  { "grade": 1.75 }
-Response: { "id": 88, "grade": 1.75, "status": "completed" }
+**`GET /api/student/profile`**
 
-GET /api/registrar/courses/{id}/roster?school_year=2026-2027&semester=1
-Response: [ { "student_id": 14, "student_number": "2023-00123", "name": "...", "grade": null, "status": "enrolled" } ]
-```
+- **Response:**
+    ```json
+    {
+        "student_number": "2023-00123",
+        "name": "...",
+        "program": "BSCS",
+        "year_level": 3,
+        "status": "active"
+    }
+    ```
 
-```
-POST /api/cashier/payments
-Request:  { "student_id": 14, "amount_centavos": 500000, "payment_type": "tuition" }
-Response: { "or_number": "OR-2026-000451", "receipt_url": "/receipts/451.pdf" }
-```
+**`GET /api/student/subjects?school_year=2026-2027&semester=1`**
 
-```
-PATCH /api/department/clearances/{id}
-Request:  { "status": "approved", "remarks": "No outstanding items." }
-Response: { "id": 22, "status": "approved", "reviewed_at": "2026-10-01T09:00:00Z" }
-```
+- **Response:**
+    ```json
+    [
+        {
+            "course_code": "CCS112",
+            "title": "...",
+            "units": 3,
+            "status": "enrolled"
+        }
+    ]
+    ```
 
-```
-POST /api/documents/requests
-Request:  { "type": "tor", "purpose": "Job application" }
-Response: { "id": 61, "status": "pending" }
-  -> 422 if student has an outstanding balance or an unapproved clearance
+**`GET /api/student/grades?school_year=2026-2027&semester=1`**
 
-PATCH /api/documents/requests/{id}/status
-Request:  { "status": "ready" }
-Response: { "id": 61, "status": "ready" }
-```
+- **Response:**
+    ```json
+    [
+        {
+            "course_code": "CCS112",
+            "title": "...",
+            "grade": 1.75
+        }
+    ]
+    ```
+    - _Note:_ only returns rows where `enrollments.status = "completed"`
 
-```
-POST /api/admin/users
-Request:  { "name": "...", "email": "...", "role": "cashier", "password": "..." }
-Response: { "id": 9, "role": "cashier" }
+### Registrar
 
-PATCH /api/admin/users/{id}
-Request:  { "role": "department_staff", "department_id": 3, "is_active": false }
-Response: { "id": 9, "role": "department_staff", "is_active": false }
-  -> deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
+**`POST /api/registrar/enrollments`**
 
-PATCH /api/admin/users/{id}/password
-Request:  { "new_password": "..." }
-Response: 204 No Content
-```
+- **Request:**
+    ```json
+    {
+        "student_id": 14,
+        "course_id": 7,
+        "school_year": "2026-2027",
+        "semester": 1
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 88,
+        "status": "enrolled",
+        "charge_applied_centavos": 900000
+    }
+    ```
+    - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
+
+**`PATCH /api/registrar/enrollments/{id}/grade`**
+
+- **Request:**
+    ```json
+    {
+        "grade": 1.75
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 88,
+        "grade": 1.75,
+        "status": "completed"
+    }
+    ```
+
+**`GET /api/registrar/courses/{id}/roster?school_year=2026-2027&semester=1`**
+
+- **Response:**
+    ```json
+    [
+        {
+            "student_id": 14,
+            "student_number": "2023-00123",
+            "name": "...",
+            "grade": null,
+            "status": "enrolled"
+        }
+    ]
+    ```
+
+### Cashier
+
+**`POST /api/cashier/payments`**
+
+- **Request:**
+    ```json
+    {
+        "student_id": 14,
+        "amount_centavos": 500000,
+        "payment_type": "tuition"
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "or_number": "OR-2026-000451",
+        "receipt_url": "/receipts/451.pdf"
+    }
+    ```
+
+### Department
+
+**`PATCH /api/department/clearances/{id}`**
+
+- **Request:**
+    ```json
+    {
+        "status": "approved",
+        "remarks": "No outstanding items."
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 22,
+        "status": "approved",
+        "reviewed_at": "2026-10-01T09:00:00Z"
+    }
+    ```
+
+### Documents
+
+**`POST /api/documents/requests`**
+
+- **Request:**
+    ```json
+    {
+        "type": "tor",
+        "purpose": "Job application"
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 61,
+        "status": "pending"
+    }
+    ```
+    - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
+
+**`PATCH /api/documents/requests/{id}/status`**
+
+- **Request:**
+    ```json
+    {
+        "status": "ready"
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 61,
+        "status": "ready"
+    }
+    ```
+
+### Admin
+
+**`POST /api/admin/users`**
+
+- **Request:**
+    ```json
+    {
+        "name": "...",
+        "email": "...",
+        "role": "cashier",
+        "password": "..."
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 9,
+        "role": "cashier"
+    }
+    ```
+
+**`PATCH /api/admin/users/{id}`**
+
+- **Request:**
+    ```json
+    {
+        "role": "department_staff",
+        "department_id": 3,
+        "is_active": false
+    }
+    ```
+- **Response:**
+    ```json
+    {
+        "id": 9,
+        "role": "department_staff",
+        "is_active": false
+    }
+    ```
+    - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
+
+**`PATCH /api/admin/users/{id}/password`**
+
+- **Request:**
+    ```json
+    {
+        "new_password": "..."
+    }
+    ```
+- **Response:** `204 No Content`
 
 ## 9. Success Metrics
 
