@@ -4,29 +4,39 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
+use Laravel\Sanctum\HasApiTokens;
 
-/**
- * @property int $id
- * @property string $name
- * @property string $email
- * @property Carbon|null $email_verified_at
- * @property string $password
- * @property string|null $remember_token
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- */
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'department_id',
+        'is_active',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -38,6 +48,75 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // STI Role Checks
+    // -------------------------------------------------------------------------
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->hasRole('student');
+    }
+
+    public function isRegistrar(): bool
+    {
+        return $this->hasRole('registrar');
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->hasRole('cashier');
+    }
+
+    public function isDepartmentStaff(): bool
+    {
+        return $this->hasRole('department_staff');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
+
+    public function processedDocumentRequests()
+    {
+        return $this->hasMany(DocumentRequest::class, 'processed_by');
+    }
+
+    public function reviewedClearances()
+    {
+        return $this->hasMany(Clearance::class, 'reviewed_by');
+    }
+
+    public function processedPayments()
+    {
+        return $this->hasMany(Payment::class, 'cashier_id');
+    }
+
+    public function auditLogsAsActor()
+    {
+        return $this->hasMany(AuditLog::class, 'actor_id');
     }
 }
