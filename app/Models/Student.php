@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
@@ -26,34 +29,34 @@ class Student extends Model
         ];
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function enrollments()
+    public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
     }
 
-    public function courses()
+    public function courses(): BelongsToMany
     {
         return $this->belongsToMany(Course::class, 'enrollments')
             ->withPivot(['school_year', 'semester', 'grade', 'status'])
             ->withTimestamps();
     }
 
-    public function payments()
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function clearances()
+    public function clearances(): HasMany
     {
         return $this->hasMany(Clearance::class);
     }
 
-    public function documentRequests()
+    public function documentRequests(): HasMany
     {
         return $this->hasMany(DocumentRequest::class);
     }

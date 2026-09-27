@@ -5,6 +5,9 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -90,32 +93,32 @@ class User extends Authenticatable
     // Relationships
     // -------------------------------------------------------------------------
 
-    public function department()
+    public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
     }
 
-    public function student()
+    public function student(): HasOne
     {
         return $this->hasOne(Student::class);
     }
 
-    public function processedDocumentRequests()
+    public function processedDocumentRequests(): HasMany
     {
         return $this->hasMany(DocumentRequest::class, 'processed_by');
     }
 
-    public function reviewedClearances()
+    public function reviewedClearances(): HasMany
     {
         return $this->hasMany(Clearance::class, 'reviewed_by');
     }
 
-    public function processedPayments()
+    public function processedPayments(): HasMany
     {
         return $this->hasMany(Payment::class, 'cashier_id');
     }
 
-    public function auditLogsAsActor()
+    public function auditLogsAsActor(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'actor_id');
     }
