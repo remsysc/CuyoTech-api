@@ -9,12 +9,12 @@
 
 ## Overview
 
-| Sprint | Dates | Goal | Requirements | Est. Size |
-|--------|-------|------|--------------|-----------|
-| 1 | Sep 27 – Oct 3 | Foundation: project setup, all migrations, auth | SETUP, FR-1 | L |
-| 2 | Oct 4 – Oct 10 | Student portal, registrar (enrollment + grading), cashier payments | FR-2, FR-3, FR-5, FR-6, FR-8, FR-9 | XL |
-| 3 | Oct 11 – Oct 17 | Department clearances, document requests, admin user management | FR-11, FR-13, FR-14, FR-15, FR-18, FR-19, FR-20 | XL |
-| 4 | Oct 18 – Oct 24 | P1/P2: class roster, payment history, cross-department clearance view, password reset, audit log | FR-7, FR-10, FR-12, FR-16, FR-17 | L |
+| Sprint | Dates           | Goal                                                                                             | Requirements                                    | Est. Size |
+| ------ | --------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- | --------- |
+| 1      | Sep 27 – Oct 3  | Foundation: project setup, all migrations, auth                                                  | SETUP, FR-1                                     | L         |
+| 2      | Oct 4 – Oct 10  | Student portal, registrar (enrollment + grading), cashier payments                               | FR-2, FR-3, FR-5, FR-6, FR-8, FR-9              | XL        |
+| 3      | Oct 11 – Oct 17 | Department clearances, document requests, admin user management                                  | FR-11, FR-13, FR-14, FR-15, FR-18, FR-19, FR-20 | XL        |
+| 4      | Oct 18 – Oct 24 | P1/P2: class roster, payment history, cross-department clearance view, password reset, audit log | FR-7, FR-10, FR-12, FR-16, FR-17                | L         |
 
 > **Oct 25–26 — Buffer:** Integration testing, bug fixes, demo prep. No new features.
 
@@ -263,25 +263,25 @@ Sprint 1 (SETUP, FR-1)
 
 ## Requirement Coverage
 
-| ID | Priority | Sprint | Status |
-|----|----------|--------|--------|
-| FR-1 | P0 | 1 | — |
-| FR-2 | P0 | 2 | — |
-| FR-3 | P0 | 2 | — |
-| FR-4 | — | — | DROPPED |
-| FR-5 | P0 | 2 | — |
-| FR-6 | P0 | 2 | — |
-| FR-7 | P1 | 4 | — |
-| FR-8 | P0 | 2 | — |
-| FR-9 | P0 | 2 | — |
-| FR-10 | P1 | 4 | — |
-| FR-11 | P0 | 3 | — |
-| FR-12 | P1 | 4 | — |
-| FR-13 | P0 | 3 | — |
-| FR-14 | P0 | 3 | — |
-| FR-15 | P0 | 3 | — |
-| FR-16 | P1 | 4 | — |
-| FR-17 | P2 | 4 | — |
-| FR-18 | P0 | 3 | — |
-| FR-19 | P0 | 3 | — |
-| FR-20 | P1 | 3 | — |
+| ID    | Priority | Sprint | Status  |
+| ----- | -------- | ------ | ------- |
+| FR-1  | P0       | 1      | —       |
+| FR-2  | P0       | 2      | —       |
+| FR-3  | P0       | 2      | —       |
+| FR-4  | —        | —      | DROPPED |
+| FR-5  | P0       | 2      | —       |
+| FR-6  | P0       | 2      | —       |
+| FR-7  | P1       | 4      | —       |
+| FR-8  | P0       | 2      | —       |
+| FR-9  | P0       | 2      | —       |
+| FR-10 | P1       | 4      | —       |
+| FR-11 | P0       | 3      | —       |
+| FR-12 | P1       | 4      | —       |
+| FR-13 | P0       | 3      | —       |
+| FR-14 | P0       | 3      | —       |
+| FR-15 | P0       | 3      | —       |
+| FR-16 | P1       | 4      | —       |
+| FR-17 | P2       | 4      | —       |
+| FR-18 | P0       | 3      | —       |
+| FR-19 | P0       | 3      | —       |
+| FR-20 | P1       | 3      | —       |

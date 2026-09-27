@@ -6,7 +6,7 @@
 
 ## 1. Scope
 
-This spec covers the Laravel API backend and shared data model for the SSIS prototype — Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules — consumed by a React SPA in a separate repo. The React repo builds against §5 only. §4 (data models) and §6 (edge cases) are backend-internal but explain *why* §5 responds the way it does.
+This spec covers the Laravel API backend and shared data model for the SSIS prototype — Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules — consumed by a React SPA in a separate repo. The React repo builds against §5 only. §4 (data models) and §6 (edge cases) are backend-internal but explain _why_ §5 responds the way it does.
 
 ## 2. Non-Goals
 
@@ -24,28 +24,28 @@ This spec covers the Laravel API backend and shared data model for the SSIS prot
 
 ## 3. Requirements (EARS)
 
-| ID | Requirement |
-|----|-------------|
-| FR-1 | WHEN a client POSTs valid `student_number_or_email` + `password` to `/api/login` THE SYSTEM SHALL return 200 with a token and role. IF the credentials don't match THEN THE SYSTEM SHALL return 401. IF the matched account has `is_active=false` THEN THE SYSTEM SHALL return 403. |
-| FR-2 | WHEN an authenticated student GETs `/api/student/profile` THE SYSTEM SHALL return only that student's own profile. |
-| FR-3 | WHEN an authenticated student GETs `/api/student/subjects` or `/api/student/grades` with `school_year`+`semester` THE SYSTEM SHALL return only their own rows for that term; grades are returned only for `enrollments.status=completed`. |
-| FR-4 | **DROPPED** — GWA computation is out of scope for this prototype (resolved 2026-09-27; was P2, needed a grading-scale decision anyway). Not implemented. |
-| FR-5 | WHEN a Registrar POSTs an enrollment THE SYSTEM SHALL create it with `status=enrolled` AND increase the student's `balance_centavos` by `course.units × rate_per_unit_centavos` (resolved 2026-09-27, see A-12). IF `(student_id, course_id, school_year, semester)` already exists THEN THE SYSTEM SHALL return 409. |
-| FR-6 | WHEN a Registrar PATCHes an enrollment's grade THE SYSTEM SHALL set `status=completed` and store the grade, overwriting any previous value with no history kept. |
-| FR-7 | WHEN a Registrar GETs a course's roster for a term THE SYSTEM SHALL return every enrolled student with their current grade/status. |
-| FR-8 | WHEN a Cashier POSTs a payment THE SYSTEM SHALL create a payment record, generate a unique `or_number`, and decrement the student's `balance_centavos` by `amount_centavos`. IF `amount_centavos <= 0` THEN THE SYSTEM SHALL return 400. |
-| FR-9 | WHEN a payment is recorded THE SYSTEM SHALL make a receipt available at a stable URL showing the OR number, student, amount, and date. |
-| FR-10 | WHEN a Cashier or Admin GETs a student's payment list THE SYSTEM SHALL return all payments for that student, newest first. |
+| ID    | Requirement                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-1  | WHEN a client POSTs valid `student_number_or_email` + `password` to `/api/login` THE SYSTEM SHALL return 200 with a token and role. IF the credentials don't match THEN THE SYSTEM SHALL return 401. IF the matched account has `is_active=false` THEN THE SYSTEM SHALL return 403.                                                                                               |
+| FR-2  | WHEN an authenticated student GETs `/api/student/profile` THE SYSTEM SHALL return only that student's own profile.                                                                                                                                                                                                                                                                |
+| FR-3  | WHEN an authenticated student GETs `/api/student/subjects` or `/api/student/grades` with `school_year`+`semester` THE SYSTEM SHALL return only their own rows for that term; grades are returned only for `enrollments.status=completed`.                                                                                                                                         |
+| FR-4  | **DROPPED** — GWA computation is out of scope for this prototype (resolved 2026-09-27; was P2, needed a grading-scale decision anyway). Not implemented.                                                                                                                                                                                                                          |
+| FR-5  | WHEN a Registrar POSTs an enrollment THE SYSTEM SHALL create it with `status=enrolled` AND increase the student's `balance_centavos` by `course.units × rate_per_unit_centavos` (resolved 2026-09-27, see A-12). IF `(student_id, course_id, school_year, semester)` already exists THEN THE SYSTEM SHALL return 409.                                                             |
+| FR-6  | WHEN a Registrar PATCHes an enrollment's grade THE SYSTEM SHALL set `status=completed` and store the grade, overwriting any previous value with no history kept.                                                                                                                                                                                                                  |
+| FR-7  | WHEN a Registrar GETs a course's roster for a term THE SYSTEM SHALL return every enrolled student with their current grade/status.                                                                                                                                                                                                                                                |
+| FR-8  | WHEN a Cashier POSTs a payment THE SYSTEM SHALL create a payment record, generate a unique `or_number`, and decrement the student's `balance_centavos` by `amount_centavos`. IF `amount_centavos <= 0` THEN THE SYSTEM SHALL return 400.                                                                                                                                          |
+| FR-9  | WHEN a payment is recorded THE SYSTEM SHALL make a receipt available at a stable URL showing the OR number, student, amount, and date.                                                                                                                                                                                                                                            |
+| FR-10 | WHEN a Cashier or Admin GETs a student's payment list THE SYSTEM SHALL return all payments for that student, newest first.                                                                                                                                                                                                                                                        |
 | FR-11 | WHEN Department staff PATCH a clearance in their own department THE SYSTEM SHALL set status to approved/denied and overwrite `reviewed_by`/`reviewed_at`, with no history kept — including re-reviewing a clearance already in a terminal state (resolved 2026-09-27, same pattern as FR-6). IF the clearance belongs to a different department THEN THE SYSTEM SHALL return 403. |
-| FR-12 | WHEN Department staff, Registrar, or Admin GET a student's clearance record THE SYSTEM SHALL return that student's status across *all* departments, not just the caller's own. |
-| FR-13 | WHEN a document request is created, or transitions to `released`, THE SYSTEM SHALL verify all of that student's clearances for the current term are `approved`. IF any are not THEN THE SYSTEM SHALL reject the transition with 422. |
-| FR-14 | WHEN a document request is created, or transitions to `released`, THE SYSTEM SHALL verify the student's `balance_centavos = 0`. IF not THEN THE SYSTEM SHALL reject the transition with 422. |
-| FR-15 | WHEN Admin POSTs/PATCHes a user THE SYSTEM SHALL create/update the account and role. THE SYSTEM SHALL NOT hard-delete a user row — deactivation is `is_active=false` only. |
-| FR-16 | WHEN Admin PATCHes a user's password THE SYSTEM SHALL replace the hash and revoke all of that user's existing tokens. |
-| FR-17 | WHEN any account is created, edited, or (de)activated THE SYSTEM SHALL append an `audit_logs` row recording actor, action, target, and a diff. |
-| FR-18 | WHEN a Student POSTs a document request THE SYSTEM SHALL create it with `status=pending`, subject to FR-13/FR-14. |
-| FR-19 | WHEN a Registrar PATCHes a document request's status THE SYSTEM SHALL only allow the transitions in the state diagram (§6). Any other transition returns 409. |
-| FR-20 | WHEN a document request's status changes THE SYSTEM SHALL make the new status visible on the owning student's next GET — no push notification (non-goal). |
+| FR-12 | WHEN Department staff, Registrar, or Admin GET a student's clearance record THE SYSTEM SHALL return that student's status across _all_ departments, not just the caller's own.                                                                                                                                                                                                    |
+| FR-13 | WHEN a document request is created, or transitions to `released`, THE SYSTEM SHALL verify all of that student's clearances for the current term are `approved`. IF any are not THEN THE SYSTEM SHALL reject the transition with 422.                                                                                                                                              |
+| FR-14 | WHEN a document request is created, or transitions to `released`, THE SYSTEM SHALL verify the student's `balance_centavos = 0`. IF not THEN THE SYSTEM SHALL reject the transition with 422.                                                                                                                                                                                      |
+| FR-15 | WHEN Admin POSTs/PATCHes a user THE SYSTEM SHALL create/update the account and role. THE SYSTEM SHALL NOT hard-delete a user row — deactivation is `is_active=false` only.                                                                                                                                                                                                        |
+| FR-16 | WHEN Admin PATCHes a user's password THE SYSTEM SHALL replace the hash and revoke all of that user's existing tokens.                                                                                                                                                                                                                                                             |
+| FR-17 | WHEN any account is created, edited, or (de)activated THE SYSTEM SHALL append an `audit_logs` row recording actor, action, target, and a diff.                                                                                                                                                                                                                                    |
+| FR-18 | WHEN a Student POSTs a document request THE SYSTEM SHALL create it with `status=pending`, subject to FR-13/FR-14.                                                                                                                                                                                                                                                                 |
+| FR-19 | WHEN a Registrar PATCHes a document request's status THE SYSTEM SHALL only allow the transitions in the state diagram (§6). Any other transition returns 409.                                                                                                                                                                                                                     |
+| FR-20 | WHEN a document request's status changes THE SYSTEM SHALL make the new status visible on the owning student's next GET — no push notification (non-goal).                                                                                                                                                                                                                         |
 
 ## 4. Data Models
 
@@ -148,6 +148,7 @@ AuditLog                                        # new in this spec — needed to
 ## 5. API Contracts
 
 **Common responses** (apply to every authenticated endpoint below unless overridden):
+
 - `401 { error: "UNAUTHENTICATED" }` — missing/invalid/expired token
 - `403 { error: "UNAUTHORIZED_ROLE" }` — authenticated, wrong role or ownership
 - `422 { error: "VALIDATION_FAILED", fields: {...} }` — request body fails validation
@@ -155,6 +156,7 @@ AuditLog                                        # new in this spec — needed to
 - `500 { error: "SERVER_ERROR" }`
 
 ### Auth
+
 ```
 POST /api/login
   Auth: none
@@ -169,6 +171,7 @@ POST /api/logout
 ```
 
 ### Student Portal
+
 ```
 GET /api/student/profile
   Auth: role=student
@@ -188,6 +191,7 @@ GET /api/student/grades
 ```
 
 ### Registrar
+
 ```
 POST /api/registrar/enrollments
   Auth: role=registrar
@@ -212,6 +216,7 @@ GET /api/registrar/courses/{id}/roster
 ```
 
 ### Cashier
+
 ```
 POST /api/cashier/payments
   Auth: role=cashier
@@ -227,6 +232,7 @@ GET /api/cashier/students/{id}/payments
 ```
 
 ### Department
+
 ```
 GET /api/department/clearances
   Auth: role=department_staff
@@ -248,6 +254,7 @@ PATCH /api/department/clearances/{id}
 ```
 
 ### Document Requests
+
 ```
 POST /api/documents/requests
   Auth: role=student
@@ -266,6 +273,7 @@ PATCH /api/documents/requests/{id}/status
 ```
 
 ### Admin
+
 ```
 POST /api/admin/users
   Auth: role=admin
@@ -293,6 +301,7 @@ GET /api/admin/audit-logs
 ## 6. Edge Cases & Error Handling
 
 **Document request state machine (FR-19):**
+
 ```
 pending -> processing -> ready -> released
 pending -> rejected
@@ -301,11 +310,12 @@ processing -> rejected
 ```
 
 **Enumerated cases:**
+
 1. Concurrent grade edits on the same enrollment — last write wins, no locking (A-3).
 2. `or_number` generation must happen inside the same DB transaction as the payment insert, using a real sequence/lock — not `SELECT MAX(...)+1`, which collides under concurrent cashiers.
 3. A second document request of the same `type` while one is still open (pending/processing/ready) — 409 `DUPLICATE_REQUEST`; a new one is only allowed once the prior one is `released` or `rejected`.
 4. Token expiry/invalidity mid-session — 401 `UNAUTHENTICATED` on any endpoint; catching this globally and redirecting to login is the React repo's job, not this spec's.
-5. Admin changes a user's `role` while they hold a still-valid token — the token stays valid, but authorization is checked against the *current* `users.role` on every request (never cached in the token), so the change takes effect on that user's very next request (A-8).
+5. Admin changes a user's `role` while they hold a still-valid token — the token stays valid, but authorization is checked against the _current_ `users.role` on every request (never cached in the token), so the change takes effect on that user's very next request (A-8).
 6. Admin deactivates a user (`is_active=false`) while they hold a still-valid token — `is_active` is checked live on every request, not only at login, so deactivation is immediate, not "on next login" (A-9). Skipping this check would make deactivation security theater.
 7. Blank/whitespace-only `purpose` on a document request — 422 `VALIDATION_FAILED`.
 8. Payment or enrollment referencing a `student_id` that doesn't exist — 404, not a raw FK constraint error.
@@ -379,7 +389,8 @@ FR-19: WHEN a registrar attempts an invalid status transition THE SYSTEM SHALL r
   When the registrar PATCHes status="processing"
   Then the response is 409 INVALID_TRANSITION
 ```
-*(Remaining FRs — 4, 7, 9, 10, 12, 16, 17, 18, 20 — follow the same Given/When/Then shape directly off their §3/§5 entries; not spelled out individually to keep this section from padding out on repetitive cases.)*
+
+_(Remaining FRs — 4, 7, 9, 10, 12, 16, 17, 18, 20 — follow the same Given/When/Then shape directly off their §3/§5 entries; not spelled out individually to keep this section from padding out on repetitive cases.)_
 
 ## 8. Assumptions
 
@@ -387,7 +398,7 @@ FR-19: WHEN a registrar attempts an invalid status transition THE SYSTEM SHALL r
 - **A-2** — `students.balance_centavos` is a running balance: increased automatically on enrollment (FR-5, resolved 2026-09-27) and decremented by payments.
 - **A-3** — No optimistic locking on any table; concurrent edits are last-write-wins.
 - **A-4** — Sanctum tokens don't auto-expire; revoked only by explicit logout or an admin-triggered password reset.
-- **A-5** — Resetting a user's password (FR-16) revokes *all* of that user's existing tokens, not just future ones.
+- **A-5** — Resetting a user's password (FR-16) revokes _all_ of that user's existing tokens, not just future ones.
 - **A-6** — Default Laravel `throttle:api` (60 req/min/token) applies everywhere; no endpoint has a bespoke limit.
 - **A-7** — Grades use the Philippine 1.00 (highest)–5.00 (failing) scale, enforced 1.00–5.00 in 0.25 steps. Inferred from standard PH university convention (and consistent with the PRD's own `grade: 1.75` example) — **confirm against CuyoTech's actual grading scale before implementing.**
 - **A-8** — `role` is read live from `users.role` on every request, never embedded in the token — a role change takes effect on the user's very next request.
