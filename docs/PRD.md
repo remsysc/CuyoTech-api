@@ -213,7 +213,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 
 - **Request:** (no body — Bearer token in Authorization header)
 - **Response:** `204 No Content`
-  - _Note:_ revokes the current Sanctum token
+    - _Note:_ revokes the current Sanctum token
 
 ### Student Portal
 
@@ -260,7 +260,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
     ]
     ```
 
-  - _Note:_ only returns rows where `enrollments.status = "completed"`
+    - _Note:_ only returns rows where `enrollments.status = "completed"`
 
 ### Registrar
 
@@ -287,7 +287,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
     }
     ```
 
-  - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
+    - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
 
 **`PATCH /api/registrar/enrollments/{id}/grade`**
 
@@ -393,7 +393,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
     }
     ```
 
-  - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
+    - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
 
 **`PATCH /api/documents/requests/{id}/status`**
 
@@ -460,7 +460,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
     }
     ```
 
-  - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
+    - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
 
 **`PATCH /api/admin/users/{id}/password`**
 
