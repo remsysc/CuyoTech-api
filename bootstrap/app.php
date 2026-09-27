@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->api(append: [
+            'throttle:api',
             CheckIsActive::class,
             EnsureFreshRole::class,
         ]);
