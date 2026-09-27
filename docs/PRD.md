@@ -191,13 +191,16 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`POST /api/login`**
 
 - **Request:**
+
     ```json
     {
         "student_number_or_email": "2023-00123",
         "password": "..."
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "token": "...",
@@ -210,13 +213,14 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 
 - **Request:** (no body — Bearer token in Authorization header)
 - **Response:** `204 No Content`
-    - _Note:_ revokes the current Sanctum token
+  - _Note:_ revokes the current Sanctum token
 
 ### Student Portal
 
 **`GET /api/student/profile`**
 
 - **Response:**
+
     ```json
     {
         "student_number": "2023-00123",
@@ -230,6 +234,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`GET /api/student/subjects?school_year=2026-2027&semester=1`**
 
 - **Response:**
+
     ```json
     [
         {
@@ -244,6 +249,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`GET /api/student/grades?school_year=2026-2027&semester=1`**
 
 - **Response:**
+
     ```json
     [
         {
@@ -253,13 +259,15 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         }
     ]
     ```
-    - _Note:_ only returns rows where `enrollments.status = "completed"`
+
+  - _Note:_ only returns rows where `enrollments.status = "completed"`
 
 ### Registrar
 
 **`POST /api/registrar/enrollments`**
 
 - **Request:**
+
     ```json
     {
         "student_id": 14,
@@ -268,7 +276,9 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "semester": 1
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 88,
@@ -276,17 +286,21 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "charge_applied_centavos": 900000
     }
     ```
-    - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
+
+  - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
 
 **`PATCH /api/registrar/enrollments/{id}/grade`**
 
 - **Request:**
+
     ```json
     {
         "grade": 1.75
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 88,
@@ -298,6 +312,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`GET /api/registrar/courses/{id}/roster?school_year=2026-2027&semester=1`**
 
 - **Response:**
+
     ```json
     [
         {
@@ -315,6 +330,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`POST /api/cashier/payments`**
 
 - **Request:**
+
     ```json
     {
         "student_id": 14,
@@ -322,7 +338,9 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "payment_type": "tuition"
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "or_number": "OR-2026-000451",
@@ -335,13 +353,16 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`PATCH /api/department/clearances/{id}`**
 
 - **Request:**
+
     ```json
     {
         "status": "approved",
         "remarks": "No outstanding items."
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 22,
@@ -355,30 +376,37 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`POST /api/documents/requests`**
 
 - **Request:**
+
     ```json
     {
         "type": "tor",
         "purpose": "Job application"
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 61,
         "status": "pending"
     }
     ```
-    - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
+
+  - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
 
 **`PATCH /api/documents/requests/{id}/status`**
 
 - **Request:**
+
     ```json
     {
         "status": "ready"
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 61,
@@ -391,6 +419,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`POST /api/admin/users`**
 
 - **Request:**
+
     ```json
     {
         "name": "...",
@@ -399,7 +428,9 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "password": "..."
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 9,
@@ -410,6 +441,7 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
 **`PATCH /api/admin/users/{id}`**
 
 - **Request:**
+
     ```json
     {
         "role": "department_staff",
@@ -417,7 +449,9 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "is_active": false
     }
     ```
+
 - **Response:**
+
     ```json
     {
         "id": 9,
@@ -425,16 +459,19 @@ _Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people coveri
         "is_active": false
     }
     ```
-    - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
+
+  - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
 
 **`PATCH /api/admin/users/{id}/password`**
 
 - **Request:**
+
     ```json
     {
         "new_password": "..."
     }
     ```
+
 - **Response:** `204 No Content`
 
 ## 9. Success Metrics
