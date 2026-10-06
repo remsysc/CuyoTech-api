@@ -1,12 +1,13 @@
 # SPEC — CuyoTech University Student Services Information System (SSIS)
 
-> Status: Draft | Version: 1.1 | Date: 2026-09-27
-> Source of truth for implementation. See PRD.md for problem/goals/rationale — not restated here.
+> Status: Draft | Version: 1.2 | Updated: 2026-10-01
+> This is the single source of truth for the intended data model, API contracts, and technical behavior. See `PRD.md` for product goals and scope; see `SPRINTS.md` for task status.
+> Confirmed repository baseline: Laravel `^13.17`, PHP `^8.3`, Pest `^5.2`; React/Inertia is in this repository. SQLite is the configured local/test default. Production database selection remains open.
 > Any behavior not covered here is an open question, not a green light to assume.
 
 ## 1. Scope
 
-This spec covers the Laravel API backend and shared data model for the SSIS prototype — Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules — consumed by a React SPA in a separate repo. The React repo builds against §5 only. §4 (data models) and §6 (edge cases) are backend-internal but explain _why_ §5 responds the way it does.
+This spec covers the SSIS prototype's Laravel application and shared data model: Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules. React/Inertia is part of this repository. Endpoints under `/api` return JSON; web routes outside `/api` may render user-facing pages such as the printable receipt. Section 4 owns the data model, §5 owns the API contracts, and §6 records edge cases.
 
 ## 2. Non-Goals
 
@@ -139,11 +140,13 @@ AuditLog                                        # new in this spec — needed to
   created_at: timestamp, not null
 ```
 
-**Relationships (unchanged from PRD §7):** Inheritance — `User` base, role subtypes via the `role` discriminator (STI). Association — `Student` ↔ `Course` through `Enrollment`. Aggregation — `Department` has `Course`s. Composition — `Student` owns `Payment`, `Clearance`, `DocumentRequest`.
+**Relationships:** `User` uses a `role` discriminator; `Student` ↔ `Course` is represented through `Enrollment`; `Department` has `Course`s; students have related payments, clearances, and document requests. See the executable migrations for enforced relational constraints.
 
 **Config value (not a DB table):** `rate_per_unit_centavos` — a single global flat rate, read from application config (e.g. `config('fees.rate_per_unit_centavos')` / `.env`), not editable through the API in v1 (A-12). Every enrollment charges `course.units × rate_per_unit_centavos` against the student's balance (FR-5).
 
-**New in this spec, not in PRD §7:** `students.balance_centavos` and the `AuditLog` table. Both were referenced by FR-14/FR-17 but had no backing field/table in the PRD — added here to make those requirements actually implementable (see Changelog).
+The model includes `students.balance_centavos` and `audit_logs` to support the balance and account-audit requirements. This SPEC section and the migrations are authoritative for the schema; `DATABASE_DESIGN.md` is a non-normative coursework reference.
+
+**Currency representation:** All monetary fields (`amount_centavos`, `balance_centavos`, `charge_applied_centavos`) are stored, calculated, and transmitted as integer centavos to avoid floating-point inaccuracies. For UI presentation convenience, standard formatted strings (e.g. `₱1,500.00`) are provided via `App\Support\Money::format()` and model accessors (`Student::balance_formatted`, `Payment::amount_formatted`). Request payloads must always send integer centavos, not formatted strings.
 
 ## 5. API Contracts
 
@@ -231,6 +234,21 @@ GET /api/cashier/students/{id}/payments
   Response 404: { error: "STUDENT_NOT_FOUND" }
 ```
 
+### Payment Receipt
+
+The receipt is a printable web response outside `/api`; JSON-only rules apply to `/api/*` endpoints.
+
+```
+GET /receipts/{or_number}
+  Auth: authenticated student (own receipt), cashier, or admin
+  Credential: Bearer token; the existing E2E contract also exercises `?token=<token>`
+  Response 200: printable HTML showing OR number, student name, amount, and payment date
+  Response 403: student is not authorized to view this payment
+  Response 404: receipt not found
+```
+
+Query-string tokens can appear in browser history and access logs. Treat that mechanism as a prototype limitation and revisit it before production.
+
 ### Department
 
 ```
@@ -314,7 +332,7 @@ processing -> rejected
 1. Concurrent grade edits on the same enrollment — last write wins, no locking (A-3).
 2. `or_number` generation must happen inside the same DB transaction as the payment insert, using a real sequence/lock — not `SELECT MAX(...)+1`, which collides under concurrent cashiers.
 3. A second document request of the same `type` while one is still open (pending/processing/ready) — 409 `DUPLICATE_REQUEST`; a new one is only allowed once the prior one is `released` or `rejected`.
-4. Token expiry/invalidity mid-session — 401 `UNAUTHENTICATED` on any endpoint; catching this globally and redirecting to login is the React repo's job, not this spec's.
+4. Token expiry/invalidity mid-session — 401 `UNAUTHENTICATED` on any endpoint; the React/Inertia client handles returning the user to login.
 5. Admin changes a user's `role` while they hold a still-valid token — the token stays valid, but authorization is checked against the _current_ `users.role` on every request (never cached in the token), so the change takes effect on that user's very next request (A-8).
 6. Admin deactivates a user (`is_active=false`) while they hold a still-valid token — `is_active` is checked live on every request, not only at login, so deactivation is immediate, not "on next login" (A-9). Skipping this check would make deactivation security theater.
 7. Blank/whitespace-only `purpose` on a document request — 422 `VALIDATION_FAILED`.
@@ -415,8 +433,13 @@ _(Remaining FRs — 4, 7, 9, 10, 12, 16, 17, 18, 20 — follow the same Given/Wh
 - ✅ ~~OQ-2 (payment idempotency)~~ — resolved 2026-09-27, accepted as operational risk. See A-11.
 - ✅ ~~OQ-3 (balance assessment)~~ — resolved 2026-09-27: automatic, tied to enrollment. See FR-5, A-2, A-12.
 - ✅ ~~OQ-4 (clearance revision)~~ — resolved 2026-09-27: revisable indefinitely, no history. See FR-11, A-13.
+- **OQ-5 (course sections):** The current model enrolls students in a `Course`, not a course section. Confirm whether section-specific enrollment is required before expanding the schema.
+- **OQ-6 (clearance creation/scope):** Define how term clearances are created and which departments count as required before implementing the document guard.
+- **OQ-7 (production database):** SQLite is the configured local/test default; select and verify a production database only if deployment is in scope.
+- **OQ-8 (receipt credential):** The legacy test contract permits a token in the query string. Decide on a safer browser receipt-link mechanism before production.
 
 ## 10. Changelog
 
-- **2026-09-27 — v1.0.** Initial spec, derived from `PRD.md`. Added `students.balance_centavos` and the `AuditLog` table — both referenced by FR-14/FR-17 but absent from the PRD's schema; without them those requirements weren't actually buildable. Flagged four open questions (OQ-1–4) rather than guessing at their resolution.
-- **2026-09-27 — v1.1.** Resolved all four open questions: dropped FR-4 (GWA) from scope; accepted payment-retry duplication as an operational risk (A-11); balance assessment is now automatic on enrollment via a flat `rate_per_unit_centavos` (FR-5, A-12) — surfaced a new gap in the process (A-14: dropping an enrollment isn't specified, so a drop would leave a stale charge if implemented later without also reversing it); clearances are now revisable indefinitely, matching the grade-edit pattern (FR-11, A-13).
+- **2026-09-27 — v1.0.** Initial spec derived from the PRD; added balance and audit-log data needed to implement existing requirements.
+- **2026-09-27 — v1.1.** Dropped GWA; accepted payment-retry duplication as a prototype risk; defined enrollment-based balance assessment; made clearance reviews revisable without history.
+- **2026-10-01 — v1.2.** Made the SPEC the sole technical contract, aligned the application architecture with the Laravel + React/Inertia repository, specified the receipt as a web response, and documented remaining product/deployment decisions as open questions.
