@@ -2,12 +2,27 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $student_number
+ * @property string $program
+ * @property int $year_level
+ * @property string $status
+ * @property int $balance_centavos
+ * @property-read string $balance_formatted
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ */
 class Student extends Model
 {
     use HasFactory;
@@ -27,6 +42,11 @@ class Student extends Model
             'year_level' => 'integer',
             'balance_centavos' => 'integer',
         ];
+    }
+
+    public function getBalanceFormattedAttribute(): string
+    {
+        return Money::format((int) $this->balance_centavos);
     }
 
     public function user(): BelongsTo

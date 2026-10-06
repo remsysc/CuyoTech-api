@@ -1,504 +1,88 @@
-# PRD — CuyoTech University Student Services Information System (SSIS)
-
-> Status: Draft | Date: 2026-09-27 | Owner: Rem
-
-## 1. Global Engineering Constraints
-
-- **Stack:** Laravel 13.x (PHP 8.3+) as an API-only backend, MySQL 8 for the database, React SPA in a **separate repo** consuming the API over `/api/*`, Laravel Sanctum for token-based auth (session auth doesn't work cleanly across two repos/origins). — CRITICAL FOR AGENTS
-- **Standards:** snake_case DB columns / plural table names (Laravel convention), all `/api/*` routes return JSON only (no Blade views), REST-ish route naming per module (`/api/registrar/...`, `/api/cashier/...`, etc.), all money stored as integers (centavos) to avoid float rounding errors, all destructive actions gated by policy classes per role, CORS configured on the Laravel side to allow the React repo's origin. **Role authorization is server-side only** — Laravel policies/middleware are the actual gate on every request; React reads `role` from the login response purely to drive dashboard routing/UI and treats a 403 as a fallback signal, never as the primary control.
-
-_Assumption:_ the case study doesn't name a DB engine — MySQL is the default, lowest-friction choice for a 5-person Laravel course project. Swap to PostgreSQL if you want parity with your other stack. Since the frontend is a separate repo, treat this PRD's backend sections (7 and 8) as the contract both repos build against — the React repo shouldn't need its own copy of this document, just section 8. **SPEC.md is the fully-detailed implementation contract** (every response code, edge case, and resolved assumption) — this PRD stays intentionally lighter; if the two ever disagree, SPEC.md wins.
-
-## 2. Problem Statement
-
-CuyoTech University's student services — enrollment, clearance, grade viewing, payments, and document requests (TOR/COR/Certifications) — are handled manually, forcing students to queue physically for each transaction. The university needs a single system so students, the registrar, the cashier, and department staff can handle these workflows online instead of in person.
-
-## 3. Goals
-
-- Students can enroll, view grades/subjects, pay fees, and request documents without a physical queue.
-- Registrar, cashier, and department staff each get a role-scoped dashboard for their part of the workflow.
-- A document request (TOR/COR/Certification) can't be released until clearance and payment are both settled — the system enforces this automatically instead of relying on manual checks.
-- Admin can manage accounts/roles without touching the database directly.
-
-## 4. Non-Goals (Out of Scope for this prototype)
-
-- Real payment gateway integration (GCash/PayMongo/bank). Cashier records payments manually; no live transaction processing.
-- SMS/email notifications — in-app status only.
-- A mobile app — web only.
-- Multi-campus / multi-branch support.
-- Automated GWA computation or latin-honors logic.
-
-_Assumption:_ these are excluded to fit the Oct 26 deadline with 5 people covering 6 modules. State this explicitly as an assumption in the term paper per the "justify your assumptions" note.
-
-## 5. Target Users
-
-- **Primary:** Students (view profile/grades/subjects, pay fees, request documents).
-- **Secondary:** Registrar staff (enrollment, grade encoding, document processing), Cashier staff (payments, receipts), Department staff (clearance approval/denial), Admin (account/role management).
-
-## 6. Functional Requirements
-
-| ID    | Requirement                                                                                                                                                                             | Priority |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| FR-1  | Student can log in with student number + password                                                                                                                                       | P0       |
-| FR-2  | Student can view their profile                                                                                                                                                          | P0       |
-| FR-3  | Student can view enrolled subjects and grades per semester                                                                                                                              | P0       |
-| FR-4  | ~~Student can view a computed running GWA~~ — **dropped from scope**, needed an undefined grading-scale/rounding decision (see SPEC.md §9)                                              | ~~P2~~   |
-| FR-5  | Registrar can enroll a student into a course section for a school year/semester — **enrolling automatically charges the student's balance** (`units × a flat per-unit rate`, see §7/§8) | P0       |
-| FR-6  | Registrar can encode/edit a student's grade per course                                                                                                                                  | P0       |
-| FR-7  | Registrar can generate a class list per course section                                                                                                                                  | P1       |
-| FR-8  | Cashier can record a payment against a student                                                                                                                                          | P0       |
-| FR-9  | System generates a printable receipt (with OR number) on payment                                                                                                                        | P0       |
-| FR-10 | Cashier can view a student's payment history                                                                                                                                            | P1       |
-| FR-11 | Department staff can approve/deny a clearance request scoped to their own department — **revisable indefinitely**, no history kept (same as grade edits)                                | P0       |
-| FR-12 | Department staff can view a student's clearance status across all departments                                                                                                           | P1       |
-| FR-13 | System blocks document release until all department clearances for that student are approved                                                                                            | P0       |
-| FR-14 | System blocks new document requests if the student has an outstanding balance                                                                                                           | P0       |
-| FR-15 | Admin can create/edit/deactivate accounts and assign roles                                                                                                                              | P0       |
-| FR-16 | Admin can reset a user's password                                                                                                                                                       | P1       |
-| FR-17 | Admin can view an audit log of account changes                                                                                                                                          | P2       |
-| FR-18 | Student can submit a document request (TOR, COR, Certification) with a stated purpose                                                                                                   | P0       |
-| FR-19 | Registrar can move a document request through status (pending → processing → ready → released)                                                                                          | P0       |
-| FR-20 | Student sees their document request status update in their portal                                                                                                                       | P1       |
-
-## 7. Database Schema
-
-**users** (base account — role via single-table inheritance)
-
-| Column        | Type                                                       | Notes                                                                            |
-| ------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| id            | bigint PK                                                  |                                                                                  |
-| name          | varchar                                                    |                                                                                  |
-| email         | varchar unique                                             |                                                                                  |
-| password      | varchar                                                    | hashed                                                                           |
-| role          | enum(student, registrar, cashier, department_staff, admin) | discriminator                                                                    |
-| department_id | bigint FK → departments, nullable                          | set when role = department_staff                                                 |
-| is_active     | boolean, default true                                      | flips false on deactivation — never delete a user row, other tables reference it |
-| timestamps    |                                                            |                                                                                  |
-
-**students** (1:1 with users where role=student)
-
-| Column           | Type                              | Notes                                                                               |
-| ---------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
-| id               | bigint PK                         |                                                                                     |
-| user_id          | bigint FK → users, unique         |                                                                                     |
-| student_number   | varchar unique                    |                                                                                     |
-| program          | varchar                           |                                                                                     |
-| year_level       | tinyint                           |                                                                                     |
-| status           | enum(active, on_leave, graduated) |                                                                                     |
-| balance_centavos | bigint, default 0                 | amount currently owed; increased on enrollment (FR-5), decreased by payments (FR-8) |
-| timestamps       |                                   |                                                                                     |
-
-**departments**
-
-| Column     | Type           | Notes |
-| ---------- | -------------- | ----- |
-| id         | bigint PK      |       |
-| name       | varchar        |       |
-| code       | varchar unique |       |
-| timestamps |                |       |
-
-**courses**
-
-| Column        | Type                    | Notes |
-| ------------- | ----------------------- | ----- |
-| id            | bigint PK               |       |
-| department_id | bigint FK → departments |       |
-| code          | varchar unique          |       |
-| title         | varchar                 |       |
-| units         | tinyint                 |       |
-| timestamps    |                         |       |
-
-**enrollments** (association: student ↔ course, per term)
-
-| Column      | Type                               | Notes                                                |
-| ----------- | ---------------------------------- | ---------------------------------------------------- |
-| id          | bigint PK                          |                                                      |
-| student_id  | bigint FK → students               |                                                      |
-| course_id   | bigint FK → courses                |                                                      |
-| school_year | varchar                            | e.g. "2026-2027"                                     |
-| semester    | tinyint                            |                                                      |
-| grade       | decimal(3,2) nullable              |                                                      |
-| status      | enum(enrolled, completed, dropped) |                                                      |
-| timestamps  |                                    | unique(student_id, course_id, school_year, semester) |
-
-**payments** (composition: owned by a student)
-
-| Column          | Type                                  | Notes                   |
-| --------------- | ------------------------------------- | ----------------------- |
-| id              | bigint PK                             |                         |
-| student_id      | bigint FK → students                  |                         |
-| cashier_id      | bigint FK → users                     | must have role=cashier  |
-| amount_centavos | bigint                                | store money as integer  |
-| or_number       | varchar unique                        | official receipt number |
-| payment_type    | enum(tuition, misc_fee, document_fee) |                         |
-| paid_at         | timestamp                             |                         |
-| timestamps      |                                       |                         |
-
-**clearances** (composition: owned by a student)
-
-| Column        | Type                            | Notes                                                    |
-| ------------- | ------------------------------- | -------------------------------------------------------- |
-| id            | bigint PK                       |                                                          |
-| student_id    | bigint FK → students            |                                                          |
-| department_id | bigint FK → departments         |                                                          |
-| school_year   | varchar                         |                                                          |
-| semester      | tinyint                         |                                                          |
-| status        | enum(pending, approved, denied) |                                                          |
-| remarks       | varchar nullable                |                                                          |
-| reviewed_by   | bigint FK → users, nullable     | must have role=department_staff                          |
-| reviewed_at   | timestamp nullable              |                                                          |
-| timestamps    |                                 | unique(student_id, department_id, school_year, semester) |
-
-**document_requests** (composition: owned by a student)
-
-| Column       | Type                                                 | Notes                    |
-| ------------ | ---------------------------------------------------- | ------------------------ |
-| id           | bigint PK                                            |                          |
-| student_id   | bigint FK → students                                 |                          |
-| type         | enum(tor, cor, certification)                        |                          |
-| purpose      | varchar                                              |                          |
-| status       | enum(pending, processing, ready, released, rejected) |                          |
-| requested_at | timestamp                                            |                          |
-| released_at  | timestamp nullable                                   |                          |
-| processed_by | bigint FK → users, nullable                          | must have role=registrar |
-| timestamps   |                                                      |                          |
-
-**audit_logs** (needed for FR-17 — not in Task 2C's required entity list, add it anyway for the account-audit requirement)
-
-| Column      | Type              | Notes                                           |
-| ----------- | ----------------- | ----------------------------------------------- |
-| id          | bigint PK         |                                                 |
-| actor_id    | bigint FK → users | who made the change                             |
-| action      | varchar           | e.g. "user.created", "user.role_changed"        |
-| target_type | varchar           | "user" in v1 — only account changes are audited |
-| target_id   | bigint            |                                                 |
-| changes     | json nullable     | before/after diff                               |
-| created_at  | timestamp         |                                                 |
-
-**Config value (not a table):** `rate_per_unit_centavos` — a single flat per-unit tuition rate, set in application config, not the database. Every enrollment charges `course.units × rate_per_unit_centavos` to `students.balance_centavos`.
-
-**Class-diagram relationships this satisfies (Task 2C):**
-
-- **Inheritance** — `User` is the base type; `Student`, `Registrar`, `Cashier`, `DepartmentStaff`, `AdminUser` are role subtypes (implemented as single-table inheritance via `role`, not separate tables — call this out as a deliberate simplification in your paper).
-- **Association** — `Student` ↔ `Course` through `Enrollment`.
-- **Aggregation** — `Department` has `Course`s (a course belongs to a department but isn't destroyed if the department record changes).
-- **Composition** — `Student` owns `Payment`, `Clearance`, and `DocumentRequest` records; these have no meaning without their parent student and should cascade-delete with it.
-
-## 8. API Contracts
-
-### Auth
-
-**`POST /api/login`**
-
-- **Request:**
-
-    ```json
-    {
-        "student_number_or_email": "2023-00123",
-        "password": "..."
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "token": "...",
-        "role": "student",
-        "redirect": "/student/dashboard"
-    }
-    ```
-
-**`POST /api/logout`**
-
-- **Request:** (no body — Bearer token in Authorization header)
-- **Response:** `204 No Content`
-    - _Note:_ revokes the current Sanctum token
-
-### Student Portal
-
-**`GET /api/student/profile`**
-
-- **Response:**
-
-    ```json
-    {
-        "student_number": "2023-00123",
-        "name": "...",
-        "program": "BSCS",
-        "year_level": 3,
-        "status": "active"
-    }
-    ```
-
-**`GET /api/student/subjects?school_year=2026-2027&semester=1`**
-
-- **Response:**
-
-    ```json
-    [
-        {
-            "course_code": "CCS112",
-            "title": "...",
-            "units": 3,
-            "status": "enrolled"
-        }
-    ]
-    ```
-
-**`GET /api/student/grades?school_year=2026-2027&semester=1`**
-
-- **Response:**
-
-    ```json
-    [
-        {
-            "course_code": "CCS112",
-            "title": "...",
-            "grade": 1.75
-        }
-    ]
-    ```
-
-    - _Note:_ only returns rows where `enrollments.status = "completed"`
-
-### Registrar
-
-**`POST /api/registrar/enrollments`**
-
-- **Request:**
-
-    ```json
-    {
-        "student_id": 14,
-        "course_id": 7,
-        "school_year": "2026-2027",
-        "semester": 1
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 88,
-        "status": "enrolled",
-        "charge_applied_centavos": 900000
-    }
-    ```
-
-    - _Note:_ `charge_applied_centavos = course.units × rate_per_unit_centavos`, added to the student's balance in the same transaction
-
-**`PATCH /api/registrar/enrollments/{id}/grade`**
-
-- **Request:**
-
-    ```json
-    {
-        "grade": 1.75
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 88,
-        "grade": 1.75,
-        "status": "completed"
-    }
-    ```
-
-**`GET /api/registrar/courses/{id}/roster?school_year=2026-2027&semester=1`**
-
-- **Response:**
-
-    ```json
-    [
-        {
-            "student_id": 14,
-            "student_number": "2023-00123",
-            "name": "...",
-            "grade": null,
-            "status": "enrolled"
-        }
-    ]
-    ```
-
-### Cashier
-
-**`POST /api/cashier/payments`**
-
-- **Request:**
-
-    ```json
-    {
-        "student_id": 14,
-        "amount_centavos": 500000,
-        "payment_type": "tuition"
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "or_number": "OR-2026-000451",
-        "receipt_url": "/receipts/451.pdf"
-    }
-    ```
-
-### Department
-
-**`PATCH /api/department/clearances/{id}`**
-
-- **Request:**
-
-    ```json
-    {
-        "status": "approved",
-        "remarks": "No outstanding items."
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 22,
-        "status": "approved",
-        "reviewed_at": "2026-10-01T09:00:00Z"
-    }
-    ```
-
-### Documents
-
-**`POST /api/documents/requests`**
-
-- **Request:**
-
-    ```json
-    {
-        "type": "tor",
-        "purpose": "Job application"
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 61,
-        "status": "pending"
-    }
-    ```
-
-    - _Note:_ `422` if student has an outstanding balance or an unapproved clearance
-
-**`PATCH /api/documents/requests/{id}/status`**
-
-- **Request:**
-
-    ```json
-    {
-        "status": "ready"
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 61,
-        "status": "ready"
-    }
-    ```
-
-### Admin
-
-**`POST /api/admin/users`**
-
-- **Request:**
-
-    ```json
-    {
-        "name": "...",
-        "email": "...",
-        "role": "cashier",
-        "password": "..."
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 9,
-        "role": "cashier"
-    }
-    ```
-
-**`PATCH /api/admin/users/{id}`**
-
-- **Request:**
-
-    ```json
-    {
-        "role": "department_staff",
-        "department_id": 3,
-        "is_active": false
-    }
-    ```
-
-- **Response:**
-
-    ```json
-    {
-        "id": 9,
-        "role": "department_staff",
-        "is_active": false
-    }
-    ```
-
-    - _Note:_ deactivation is a soft flag, not a delete — payments/clearances reference this user and must not be orphaned
-
-**`PATCH /api/admin/users/{id}/password`**
-
-- **Request:**
-
-    ```json
-    {
-        "new_password": "..."
-    }
-    ```
-
-- **Response:** `204 No Content`
-
-## 9. Success Metrics
-
-- All 6 modules are demoable end-to-end in the video walkthrough (rubric item 3, 40 pts).
-- A student enrolled and graded by the Registrar sees that grade correctly on their Student Portal.
-- A payment recorded by the Cashier reduces the student's outstanding balance and unblocks document requests.
-- A document request is blocked until (a) balance is zero and (b) all department clearances are approved — demoable as a rejected request and then a successful one.
-- All 3 identified security vulnerabilities (Task 4) each have a working mitigation demonstrated, not just described.
-- Zero P0 defects open at submission.
-
-## 10. Active Feature Development
-
-<pending_tasks>
-
-- [ ] Architect: Write migrations for the 8 tables above (incl. `audit_logs` and `students.balance_centavos`); set up `User` role-based model access (STI pattern) and per-role Laravel policies
-- [ ] Architect: Add `rate_per_unit_centavos` to application config; wire enrollment creation to charge it atomically (see SPEC.md Edge Case 11)
-- [ ] Architect: Install/configure Sanctum, set up CORS for the React repo's origin
-- [ ] Architect: Decide and document the money-handling convention (integer centavos) project-wide
-- [ ] Backend: Student Portal endpoints (profile, grades, subjects) — FR-1–4
-- [ ] Backend: Registrar endpoints (enrollment, grade encoding, class list) — FR-5–7
-- [ ] Backend: Cashier endpoints (payments, receipt PDF, payment history) — FR-8–10
-- [ ] Backend: Department clearance endpoints — FR-11–13
-- [ ] Backend: Document request workflow + balance/clearance guard — FR-14, FR-18–20
-- [ ] Backend: Admin user management + audit log — FR-15–17
-- [ ] Frontend (separate repo): Login page + token storage + role-based dashboard redirect
-- [ ] Frontend (separate repo): Student dashboard (profile, grades, subjects)
-- [ ] Frontend (separate repo): Document request page + status tracker
-- [ ] QA: Test cases for Student Login (unit), Registrar↔Student Portal (integration), full SSIS flow (system), 3 security test cases (Task 4)
-      </pending_tasks>
+# Product Requirements — CuyoTech University SSIS
+
+> **Status:** Draft prototype scope
+> **Product owner:** Rem
+
+## Document ownership
+
+- This document owns the product problem, goals, scope, and functional requirements.
+- `SPEC.md` is the single source of truth for data models, API contracts, validation, and resolved technical behavior.
+- `SPRINTS.md` owns delivery sequencing and task status. Do not maintain a second implementation checklist here.
+- `TEST_PLAN.md` owns verification strategy; `docs/ai/current.md` records the implementation and latest observed test status.
+
+## Product context
+
+CuyoTech University currently handles student services such as enrollment, grade viewing, payments, clearances, and document requests manually. The prototype aims to let students and university staff complete these workflows online.
+
+## Project constraints
+
+- The repository is a Laravel 13 application (PHP `^8.3`) with React/Inertia in the same repository. Laravel JSON endpoints are under `/api`; web-facing pages use the app's web routes.
+- Authentication for the API uses Laravel Sanctum. Authorization is enforced on the server.
+- SQLite is the repository's default local and test database. The production database has not been selected in the project configuration; do not assume MySQL or PostgreSQL without a deployment decision.
+- Store monetary values as integer centavos, not floating-point values.
+- The separate-frontend-repository assumption from earlier drafts is no longer current.
+
+## Goals
+
+- Students can view their profile, subjects, and grades.
+- Registrar staff can manage enrollment and grades.
+- Cashiers can record payments and provide receipts.
+- Department staff can review clearances.
+- Students can request official documents, subject to clearance and balance rules.
+- Admins can manage accounts and roles.
+
+## Non-goals for this prototype
+
+- Payment gateway integration; cashier payments are recorded manually.
+- SMS or email notifications.
+- A native mobile application.
+- Multi-campus support.
+- Automated GWA or latin-honors computation (FR-4 is dropped).
+
+## Target users
+
+- **Student:** views their profile, subjects, grades, balance, clearances, and document-request status; submits document requests.
+- **Registrar:** manages enrollment, grades, and document requests.
+- **Cashier:** records payments and provides receipts.
+- **Department staff:** reviews clearances for their department.
+- **Admin:** manages user accounts and roles.
+
+## Functional requirements
+
+| ID    | Requirement                                                                                                                                                                                                                  | Priority |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-1  | A student can authenticate using their student number or email and password.                                                                                                                                                 | P0       |
+| FR-2  | A student can view their own profile.                                                                                                                                                                                        | P0       |
+| FR-3  | A student can view their own subjects and completed grades by term.                                                                                                                                                          | P0       |
+| FR-4  | **Dropped:** compute GWA; grading and rounding rules are not defined for this prototype.                                                                                                                                     | —        |
+| FR-5  | A registrar can enroll a student in a course for a school year and semester; enrollment applies the configured per-unit charge to the student's balance. Course sections are not represented in the current prototype model. | P0       |
+| FR-6  | A registrar can encode or edit a student's grade for a course.                                                                                                                                                               | P0       |
+| FR-7  | A registrar can view a course roster for a term.                                                                                                                                                                             | P1       |
+| FR-8  | A cashier can record a payment against a student.                                                                                                                                                                            | P0       |
+| FR-9  | The system provides a stable, printable receipt after payment.                                                                                                                                                               | P0       |
+| FR-10 | A cashier can view a student's payment history.                                                                                                                                                                              | P1       |
+| FR-11 | Department staff can approve or deny clearances within their own department.                                                                                                                                                 | P0       |
+| FR-12 | Authorized staff can view a student's clearance status across departments.                                                                                                                                                   | P1       |
+| FR-13 | Document release is blocked until required department clearances are approved.                                                                                                                                               | P0       |
+| FR-14 | New document requests are blocked while the student has an outstanding balance.                                                                                                                                              | P0       |
+| FR-15 | Admins can create, edit, and deactivate accounts and assign roles.                                                                                                                                                           | P0       |
+| FR-16 | Admins can reset a user's password.                                                                                                                                                                                          | P1       |
+| FR-17 | Admins can view an audit log of account changes.                                                                                                                                                                             | P2       |
+| FR-18 | A student can request a TOR, COR, or certification and provide a purpose.                                                                                                                                                    | P0       |
+| FR-19 | A registrar can move a document request through its allowed statuses.                                                                                                                                                        | P0       |
+| FR-20 | A student can view the current status of their document request.                                                                                                                                                             | P1       |
+
+## Success criteria
+
+- Demonstrate the in-scope student, registrar, cashier, department, and admin workflows end to end.
+- A grade entered by a registrar appears in the owning student's grade view.
+- A cashier payment updates the student's balance and produces a receipt.
+- Document requests and release enforce the balance and clearance requirements.
+- No P0 defects remain at project submission.
+
+## Decisions still requiring confirmation
+
+- Which database engine, if any, is required for deployment beyond the current SQLite default.
+- Whether CuyoTech's actual grading scale matches the provisional scale in `SPEC.md`.
+- How current-term clearance records are created and which departments are required for a term.
+- Whether course sections are required for the course deliverable; the current schema models courses only.

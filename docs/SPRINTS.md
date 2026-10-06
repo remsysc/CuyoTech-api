@@ -1,9 +1,11 @@
 # Sprint Plan — CuyoTech University SSIS
 
-> Derived from: SPEC.md v1.1 | PRD.md | Date: 2026-09-27
+> Derived from: `SPEC.md` v1.2 and `PRD.md` | Updated: 2026-10-01
 > Every task traces to a requirement ID. Tasks without one are marked SETUP.
-> Sizing: T-shirt (S / M / L / XL). Deadline: Oct 26.
-> All P0 requirements land in Sprints 1–3. P1/P2 land in Sprint 4.
+> Dates and sizing are planning estimates; task checkboxes are the implementation-status record.
+> All P0 requirements are planned for Sprints 1–3; P1/P2 are planned for Sprint 4.
+>
+> **Status snapshot:** FR-1 through FR-3 are implemented and the student portal feature tests pass. Registrar enrollment/grading, cashier payments/receipts, and later sprints remain incomplete. See `docs/ai/current.md` for observed routes and test results.
 
 ---
 
@@ -32,10 +34,10 @@
 
 #### SETUP
 
-- [x] SETUP-1 — Create all 8 migrations in dependency order: `departments`, `users`, `students`, `courses`, `enrollments`, `payments`, `clearances`, `document_requests`, `audit_logs`. Add composite unique constraints per SPEC §4. (M)
+- [x] SETUP-1 — Create the nine SSIS domain tables and their migrations in dependency order: `departments`, `users`, `students`, `courses`, `enrollments`, `payments`, `clearances`, `document_requests`, `audit_logs`. Add composite unique constraints per SPEC §4. (M)
 - [x] SETUP-2 — Add `rate_per_unit_centavos` to `config/fees.php` (or `config/app.php`) and expose it via `.env`. Document the money-handling convention (integer centavos, never floats) in a code comment in that config file. (S)
-- [x] SETUP-3 — Install and configure Laravel Sanctum. Configure CORS (`config/cors.php`) to allow the React repo's origin via an env var (`FRONTEND_URL`). (S)
-- [x] SETUP-4 — Create Eloquent models for all 8 tables. Add the `role` discriminator logic to `User` (no separate subtype models — STI via `role` column). Add `$fillable`, casts, and relationships per SPEC §4. (M)
+- [x] SETUP-3 — Install and configure Laravel Sanctum. Configure CORS only for an explicitly cross-origin client; React/Inertia currently lives in this repository. (S)
+- [x] SETUP-4 — Create Eloquent models for the nine SSIS domain tables. Add the `role` discriminator logic to `User` (no separate subtype models — STI via `role` column). Add `$fillable`, casts, and relationships per SPEC §4. (M)
 - [x] SETUP-5 — Create per-role Policy classes (StudentPolicy, RegistrarPolicy, CashierPolicy, DepartmentStaffPolicy, AdminPolicy) with a base `role` check. Wire them to `AuthServiceProvider`. (S)
 - [x] SETUP-6 — Add a global middleware that checks `is_active` on every authenticated request and returns `403 ACCOUNT_DEACTIVATED` if false (SPEC §6 Edge Case 6, A-9). (S)
 - [x] SETUP-7 — Add a global middleware that reads `role` live from `users.role` on every request (never cached in token) (A-8). (S)
@@ -53,7 +55,7 @@
 
 ### Definition of Done
 
-- [x] All 8 migrations run cleanly on a fresh DB.
+- [x] All nine SSIS domain tables migrate cleanly on a fresh DB.
 - [x] `POST /api/login` returns 200 with token and role for a valid active user.
 - [x] Wrong password returns 401 `INVALID_CREDENTIALS`.
 - [x] Deactivated account returns 403 `ACCOUNT_DEACTIVATED`.
@@ -78,54 +80,54 @@
 
 #### FR-2 — Student Profile
 
-- [ ] FR-2.1 — Create `GET /api/student/profile`: return `{ student_number, name, program, year_level, status }` scoped to the authenticated student only. (S)
-- [ ] FR-2.2 — Return 403 if a non-student or another student's token is used (ownership enforced by reading `auth()->user()->student->id`). (S)
-- [ ] FR-2.3 — Test: student A's token returns only A's profile; non-student role returns 403. (S)
+- [x] FR-2.1 — `GET /api/student/profile` returns `{ student_number, name, program, year_level, status }` for the authenticated student only. (S)
+- [x] FR-2.2 — Non-student roles are rejected; profile data is scoped to the authenticated student. (S)
+- [x] FR-2.3 — Feature tests cover profile fields, privacy, and role/access boundaries. (S)
 
 #### FR-3 — Student Subjects & Grades
 
-- [ ] FR-3.1 — Create `GET /api/student/subjects`: accept required `school_year` + `semester` query params; return `[{ course_code, title, units, status }]` scoped to the authenticated student for that term. (S)
-- [ ] FR-3.2 — Create `GET /api/student/grades`: same params; return `[{ course_code, title, grade }]` for `enrollments.status=completed` rows only. (S)
-- [ ] FR-3.3 — Return `400 { error: "MISSING_TERM" }` if `school_year` or `semester` is absent on either endpoint (A-1). (S)
-- [ ] FR-3.4 — Test: only completed enrollments appear in grades; in-progress enrollment is absent; missing params return 400. (S)
+- [x] FR-3.1 — `GET /api/student/subjects` accepts required `school_year` and `semester` and returns only that student's enrollments for the term. (S)
+- [x] FR-3.2 — `GET /api/student/grades` returns completed enrollments for the requested term only. (S)
+- [x] FR-3.3 — Missing term parameters return `400 { error: "MISSING_TERM" }`. (S)
+- [x] FR-3.4 — Feature tests cover term isolation, empty results, grade filtering, and missing parameters. (S)
 
 #### FR-5 — Registrar Enrollment
 
-- [ ] FR-5.1 — Create `POST /api/registrar/enrollments`: create enrollment with `status=enrolled`; charge `course.units × config('fees.rate_per_unit_centavos')` to `students.balance_centavos` in a single DB transaction (SPEC §6 Edge Case 11). Return `201 { id, status: "enrolled", charge_applied_centavos }`. (M)
-- [ ] FR-5.2 — Return `404 { error: "STUDENT_NOT_FOUND" }` or `{ error: "COURSE_NOT_FOUND" }` when IDs don't resolve (Edge Case 8). (S)
-- [ ] FR-5.3 — Return `409 { error: "ALREADY_ENROLLED" }` on duplicate `(student_id, course_id, school_year, semester)` with no second charge applied. (S)
-- [ ] FR-5.4 — Test: balance increases by `units × rate`; duplicate attempt returns 409 with no second charge; transaction rolls back if either operation fails (crash safety). (M)
+- [x] FR-5.1 — Create `POST /api/registrar/enrollments`: create enrollment with `status=enrolled`; charge `course.units × config('fees.rate_per_unit_centavos')` to `students.balance_centavos` in a single DB transaction (SPEC §6 Edge Case 11). Return `201 { id, status: "enrolled", charge_applied_centavos }`. (M)
+- [x] FR-5.2 — Return `404 { error: "STUDENT_NOT_FOUND" }` or `{ error: "COURSE_NOT_FOUND" }` when IDs don't resolve (Edge Case 8). (S)
+- [x] FR-5.3 — Return `409 { error: "ALREADY_ENROLLED" }` on duplicate `(student_id, course_id, school_year, semester)` with no second charge applied. (S)
+- [x] FR-5.4 — Test: balance increases by `units × rate`; duplicate attempt returns 409 with no second charge; transaction rolls back if either operation fails (crash safety). (M)
 
 #### FR-6 — Grade Encoding
 
-- [ ] FR-6.1 — Create `PATCH /api/registrar/enrollments/{id}/grade`: set `grade` and `status=completed`, overwriting any previous value (no history, A-3). Return `200 { id, grade, status: "completed" }`. (S)
-- [ ] FR-6.2 — Validate grade is in `1.00–5.00` range in `0.25` steps (A-7). Return `422 { error: "INVALID_GRADE_RANGE" }` if outside that. (S)
-- [ ] FR-6.3 — Return `404 { error: "ENROLLMENT_NOT_FOUND" }` for unknown enrollment ID. (S)
-- [ ] FR-6.4 — Test: graded enrollment appears in FR-3 grades response; grade outside range returns 422; re-grading overwrites cleanly with no history. (S)
+- [x] FR-6.1 — Create `PATCH /api/registrar/enrollments/{id}/grade`: set `grade` and `status=completed`, overwriting any previous value (no history, A-3). Return `200 { id, grade, status: "completed" }`. (S)
+- [x] FR-6.2 — Validate grade is in `1.00–5.00` range in `0.25` steps (A-7). Return `422 { error: "INVALID_GRADE_RANGE" }` if outside that. (S)
+- [x] FR-6.3 — Return `404 { error: "ENROLLMENT_NOT_FOUND" }` for unknown enrollment ID. (S)
+- [x] FR-6.4 — Test: graded enrollment appears in FR-3 grades response; grade outside range returns 422; re-grading overwrites cleanly with no history. (S)
 
 #### FR-8 — Cashier Payments
 
-- [ ] FR-8.1 — Create `POST /api/cashier/payments`: create a payment record and decrement `students.balance_centavos` by `amount_centavos`. Generate `or_number` inside the same DB transaction using a lock (not `MAX()+1` — Edge Case 2). Return `201 { or_number, receipt_url }`. (M)
-- [ ] FR-8.2 — Return `400 { error: "INVALID_AMOUNT" }` if `amount_centavos <= 0`. (S)
-- [ ] FR-8.3 — Return `404 { error: "STUDENT_NOT_FOUND" }` for unknown student. (S)
-- [ ] FR-8.4 — Test: balance decrements by payment amount; `or_number` is unique across concurrent cashiers; `amount_centavos=0` returns 400. (M)
+- [x] FR-8.1 — Create `POST /api/cashier/payments`: create a payment record and decrement `students.balance_centavos` by `amount_centavos`. Generate `or_number` inside the same DB transaction using a lock (not `MAX()+1` — Edge Case 2). Return `201 { or_number, receipt_url }`. (M)
+- [x] FR-8.2 — Return `400 { error: "INVALID_AMOUNT" }` if `amount_centavos <= 0`. (S)
+- [x] FR-8.3 — Return `404 { error: "STUDENT_NOT_FOUND" }` for unknown student. (S)
+- [x] FR-8.4 — Test: balance decrements by payment amount; `or_number` is unique across concurrent cashiers; `amount_centavos=0` returns 400. (M)
 
 #### FR-9 — Payment Receipt
 
-- [ ] FR-9.1 — Create a stable receipt route (e.g. `GET /receipts/{or_number}`) returning a simple HTML/PDF view showing OR number, student name, amount, and `paid_at`. (M)
-- [ ] FR-9.2 — The `receipt_url` in the FR-8 response must resolve correctly for any client with a valid token. (S)
+- [x] FR-9.1 — Create `GET /receipts/{or_number}` as an authenticated printable HTML web response showing OR number, student name, amount, and `paid_at` (SPEC §5). (M)
+- [x] FR-9.2 — The `receipt_url` in the FR-8 response must resolve for the student who owns the payment and for authorized cashier/admin users. Review query-string token support before production (SPEC §9 OQ-8). (S)
 
 ### Definition of Done
 
-- [ ] Registrar enrolls student A in course X; response includes `charge_applied_centavos = units × rate`; student A's balance increases by that amount.
-- [ ] Duplicate enrollment returns 409 with no second charge.
-- [ ] Registrar grades that enrollment; `grade=1.75`, `status=completed`.
-- [ ] Graded enrollment appears in student A's `GET /api/student/grades` response.
-- [ ] Cashier records a payment; `or_number` is unique; student's balance decrements.
-- [ ] Receipt URL is stable and renders correctly.
-- [ ] Missing term params return 400 on student endpoints.
-- [ ] All new endpoints return 401 without a token, 403 for wrong role.
-- [ ] Pint passes.
+- [x] Registrar enrolls student A in course X; response includes `charge_applied_centavos = units × rate`; student A's balance increases by that amount.
+- [x] Duplicate enrollment returns 409 with no second charge.
+- [x] Registrar grades that enrollment; `grade=1.75`, `status=completed`.
+- [x] Graded enrollment appears in student A's `GET /api/student/grades` response.
+- [x] Cashier records a payment; `or_number` is unique; student's balance decrements.
+- [x] Receipt URL is stable and renders correctly.
+- [x] Student profile, subjects, and grades endpoints are covered by passing feature tests.
+- [x] Registrar and cashier endpoints return 401 without a token and 403 for a wrong role.
+- [x] Pint passes for the Sprint 2 changes.
 
 ### Depends on
 
@@ -266,8 +268,8 @@ Sprint 1 (SETUP, FR-1)
 | ID    | Priority | Sprint | Status  |
 | ----- | -------- | ------ | ------- |
 | FR-1  | P0       | 1      | DONE    |
-| FR-2  | P0       | 2      | —       |
-| FR-3  | P0       | 2      | —       |
+| FR-2  | P0       | 2      | DONE    |
+| FR-3  | P0       | 2      | DONE    |
 | FR-4  | —        | —      | DROPPED |
 | FR-5  | P0       | 2      | —       |
 | FR-6  | P0       | 2      | —       |

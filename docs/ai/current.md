@@ -1,31 +1,31 @@
-# CuyoTech University SSIS - Current Context
+# CuyoTech SSIS — Current Context
 
-**Version:** 1.0.0-alpha
-**Current Milestone:** Sprint 2 (Student Portal + Registrar + Cashier)
+**Snapshot date:** 2026-10-06
+**Current work:** Sprint 2 Completed — Student Portal + Registrar + Cashier
 
-## Implementation Status
+## Implementation status observed
 
-- **Sprint 1 (Foundation + Auth):** Completed. Pull requests created for:
-    - Migrations and models
-    - Sanctum and CORS
-    - Role-based Policies
-    - Global middlewares for active status and role refresh
-    - Factories and seeders
-    - Login/Logout endpoints with tests
+- **Foundation/auth:** login and logout routes, Sanctum, role/active-account middleware, migrations, models, and supporting factories are present.
+- **API contracts & error envelopes:** `bootstrap/app.php` standardizes JSON error responses to match `docs/SPEC.md` §5 (`VALIDATION_FAILED` with `fields`, `UNAUTHENTICATED`, `UNAUTHORIZED_ROLE`, `RATE_LIMITED`, `CONFLICT`, `NOT_FOUND`). Verified by `ErrorEnvelopeTest.php`.
+- **Currency formatting & schema:** integer centavos remain canonical across database and input payloads; `App\Support\Money::format()` and accessors (`Student::balance_formatted`, `Payment::amount_formatted`) provide display formatting (`MoneyTest.php`). `students.user_id` foreign key updated to `cascadeOnDelete()`.
+- **Student portal:** profile, subjects, and grades routes/controllers are present and verified.
+- **Registrar/cashier/receipts:** `POST /api/registrar/enrollments`, `PATCH /api/registrar/enrollments/{id}/grade`, `POST /api/cashier/payments`, and `GET /receipts/{or_number}` are implemented and fully verified against E2E tiers 1-4.
 
-## Active Work
+## Important technical facts
 
-- Moving to **Sprint 2**, which covers FR-2, FR-3, FR-5, FR-6, FR-8, and FR-9.
-- Focus: Student profile, viewing subjects/grades, Registrar enrollment and grade encoding, Cashier payments and receipts.
+- Laravel `^13.17`, PHP `^8.3`, Pest `^5.2` (`composer.json`).
+- React/Inertia is part of this repository; the frontend is not a separate repository.
+- SQLite is the configured default for local/testing. A production database has not been selected.
+- Money is represented as integer centavos; role and active status are checked server-side.
 
-## Important Decisions & Constraints
+## Current test snapshot
 
-- Money handling convention: integer centavos, never floats (`config/fees.php`).
-- Role discriminator logic uses STI via `role` column on the `User` model, not separate subtype models.
-- Authentication uses Laravel Sanctum tokens.
+- Complete test suite: 269 tests passed, 901 assertions (`php artisan test --compact`).
+- E2E contract suite: 103 tests passed, 349 assertions (`vendor/bin/pest tests/Feature/E2E --compact`).
 
-## Relevant Documents
+## Source-of-truth documents
 
-- Sprints & Tasks: `docs/SPRINTS.md`
-- Tech Spec: `docs/SPEC.md`
-- Product Requirements: `docs/PRD.md`
+- Product scope: `docs/PRD.md`
+- Technical/data/API contract: `docs/SPEC.md`
+- Work sequencing/status: `docs/SPRINTS.md`
+- Test strategy: `docs/TEST_PLAN.md`

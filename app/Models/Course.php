@@ -7,7 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $department_id
+ * @property string $code
+ * @property string $title
+ * @property int $units
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Department $department
+ */
 class Course extends Model
 {
     use HasFactory;
