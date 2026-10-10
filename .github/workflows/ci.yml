@@ -49,7 +49,7 @@ jobs:
           coverage: none
 
       - name: Composer Security Audit
-        run: composer audit
+        run: composer audit --locked
 
   tests-and-quality:
     name: Build, Lint & Test Suite
