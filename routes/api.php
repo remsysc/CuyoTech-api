@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\CashierController;
 use App\Http\Controllers\Department\DepartmentClearanceController;
@@ -46,4 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:student')->get('/documents/requests', [DocumentRequestController::class, 'index']);
     Route::middleware('role:student')->post('/documents/requests', [DocumentRequestController::class, 'store']);
     Route::middleware('role:registrar')->patch('/documents/requests/{id}/status', [DocumentRequestController::class, 'updateStatus']);
+
+    // Admin User Management (FR-15)
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::patch('/users/{id}', [AdminUserController::class, 'update']);
+    });
 });

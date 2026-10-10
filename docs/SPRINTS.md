@@ -173,25 +173,25 @@
 
 #### FR-15 — Admin User Management
 
-- [ ] FR-15.1 — Create `POST /api/admin/users`: create user with hashed password; `department_id` required iff `role=department_staff`. Return `201 { id, role }`. (S)
-- [ ] FR-15.2 — Return `409 { error: "EMAIL_TAKEN" }` on duplicate email. (S)
-- [ ] FR-15.3 — Create `PATCH /api/admin/users/{id}`: update `role`, `department_id`, `is_active`; no hard-delete ever (FR-15). Return `200 { id, role, is_active }`. (S)
-- [ ] FR-15.4 — Return `404 { error: "USER_NOT_FOUND" }` for unknown user ID. (S)
-- [ ] FR-15.5 — Append `audit_logs` row on every create/edit/deactivation (FR-17 data model — the log write is wired here even if the read endpoint lands in Sprint 4). (S)
-- [ ] FR-15.6 — Test: admin deactivates active cashier; cashier's very next request with their still-valid token returns 403 `ACCOUNT_DEACTIVATED` (SPEC acceptance criteria FR-15 + Edge Case 6). (M)
-- [ ] FR-15.7 — Test: audit log row is written on user create and on `is_active` toggle. (S)
+- [x] FR-15.1 — Create `POST /api/admin/users`: create user with hashed password; `department_id` required iff `role=department_staff`. Return `201 { id, role }`. (S)
+- [x] FR-15.2 — Return `409 { error: "EMAIL_TAKEN" }` on duplicate email. (S)
+- [x] FR-15.3 — Create `PATCH /api/admin/users/{id}`: update `role`, `department_id`, `is_active`; no hard-delete ever (FR-15). Return `200 { id, role, is_active }`. (S)
+- [x] FR-15.4 — Return `404 { error: "USER_NOT_FOUND" }` for unknown user ID. (S)
+- [x] FR-15.5 — Append `audit_logs` row on every create/edit/deactivation (FR-17 data model — the log write is wired here even if the read endpoint lands in Sprint 4). (S)
+- [x] FR-15.6 — Test: admin deactivates active cashier; cashier's very next request with their still-valid token returns 403 `ACCOUNT_DEACTIVATED` (SPEC acceptance criteria FR-15 + Edge Case 6). (M)
+- [x] FR-15.7 — Test: audit log row is written on user create and on `is_active` toggle. (S)
 
 ### Definition of Done
 
-- [ ] Department staff can list and review their own clearances; cross-department patch returns 403.
-- [ ] Clearance is re-reviewable; subsequent PATCH overwrites with no error.
-- [ ] Student's document request blocked by incomplete clearance (422) and by balance > 0 (422); both clear → 201.
-- [ ] Duplicate open request of the same type → 409.
-- [ ] Blank `purpose` → 422.
-- [ ] Registrar can walk a request through valid states; terminal state transition → 409.
-- [ ] Admin creates a user; duplicate email → 409; deactivation is immediate on next request.
-- [ ] Audit log rows are written for every account change.
-- [ ] Pint passes.
+- [x] Department staff can list and review their own clearances; cross-department patch returns 403.
+- [x] Clearance is re-reviewable; subsequent PATCH overwrites with no error.
+- [x] Student's document request blocked by incomplete clearance (422) and by balance > 0 (422); both clear → 201.
+- [x] Duplicate open request of the same type → 409.
+- [x] Blank `purpose` → 422.
+- [x] Registrar can walk a request through valid states; terminal state transition → 409.
+- [x] Admin creates a user; duplicate email → 409; deactivation is immediate on next request.
+- [x] Audit log rows are written for every account change.
+- [x] Pint passes.
 
 ### Depends on
 
