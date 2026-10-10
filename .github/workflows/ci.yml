@@ -1,0 +1,85 @@
+name: CI & Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  security-and-privacy:
+    name: Security, Privacy & Secret Leak Audits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify No Tracked .env or Sensitive Files
+        run: |
+          echo "Scanning for tracked .env or secret files..."
+          TRACKED_SECRETS=$(git ls-files | grep -E '(^|/)\.env($|\..*)' | grep -v '\.env\.example' || true)
+          if [ -n "$TRACKED_SECRETS" ]; then
+            echo "::error::CRITICAL: The following sensitive/env files are tracked in git:"
+            echo "$TRACKED_SECRETS"
+            exit 1
+          fi
+          echo "No sensitive .env files tracked in repository."
+
+      - name: Gitleaks Secret & Privacy Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+      - name: Setup PHP for Security Audits
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Composer Security Audit
+        run: composer audit --locked
+
+  tests-and-quality:
+    name: Build, Lint & Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Application
+        run: composer setup
+
+      - name: Verify Code Style (Laravel Pint)
+        run: vendor/bin/pint --test
+
+      - name: Static Analysis (PHPStan)
+        run: vendor/bin/phpstan analyse --memory-limit=2G
+
+      - name: Run Test Suite (Pest)
+        run: php artisan test --compact
