@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\CashierController;
+use App\Http\Controllers\Department\DepartmentClearanceController;
 use App\Http\Controllers\Registrar\RegistrarController;
 use App\Http\Controllers\Student\StudentPortalController;
 use Illuminate\Http\Request;
@@ -32,5 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cashier
     Route::middleware('role:cashier')->prefix('cashier')->group(function () {
         Route::post('/payments', [CashierController::class, 'recordPayment']);
+    });
+
+    // Department Staff
+    Route::middleware('role:department_staff')->prefix('department')->group(function () {
+        Route::get('/clearances', [DepartmentClearanceController::class, 'index']);
+        Route::patch('/clearances/{id}', [DepartmentClearanceController::class, 'update']);
     });
 });

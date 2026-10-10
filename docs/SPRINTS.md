@@ -147,10 +147,10 @@
 
 #### FR-11 — Clearance Review
 
-- [ ] FR-11.1 — Create `GET /api/department/clearances`: return clearances auto-scoped server-side to `auth()->user()->department_id`; optional `?status` filter. (S)
-- [ ] FR-11.2 — Create `PATCH /api/department/clearances/{id}`: accept `{ status: "approved"|"denied", remarks }`; overwrite `status`, `remarks`, `reviewed_by`, `reviewed_at` (last-write-wins, A-13). (S)
-- [ ] FR-11.3 — Return `403 { error: "UNAUTHORIZED_ROLE" }` if the clearance's `department_id` differs from the caller's `department_id`. (S)
-- [ ] FR-11.4 — Test: Library staff can patch Library clearances; Registrar Office staff get 403 on Library clearance; re-reviewing an already-approved clearance succeeds and overwrites with no history. (S)
+- [x] FR-11.1 — Create `GET /api/department/clearances`: return clearances auto-scoped server-side to `auth()->user()->department_id`; optional `?status` filter. (S)
+- [x] FR-11.2 — Create `PATCH /api/department/clearances/{id}`: accept `{ status: "approved"|"denied", remarks }`; overwrite `status`, `remarks`, `reviewed_by`, `reviewed_at` (last-write-wins, A-13). (S)
+- [x] FR-11.3 — Return `403 { error: "UNAUTHORIZED_ROLE" }` if the clearance's `department_id` differs from the caller's `department_id`. (S)
+- [x] FR-11.4 — Test: Library staff can patch Library clearances; Registrar Office staff get 403 on Library clearance; re-reviewing an already-approved clearance succeeds and overwrites with no history. (S)
 
 #### FR-13 + FR-14 — Clearance & Balance Guard
 
