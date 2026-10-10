@@ -20,7 +20,7 @@ class DocumentRequestFactory extends Factory
     {
         return [
             'student_id' => Student::factory(),
-            'type' => fake()->randomElement(['TOR', 'Diploma', 'Good Moral']),
+            'type' => fake()->randomElement(['tor', 'cor', 'certification']),
             'purpose' => fake()->sentence(),
             'status' => 'pending',
             'processed_by' => null,

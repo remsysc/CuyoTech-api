@@ -154,44 +154,44 @@
 
 #### FR-13 + FR-14 — Clearance & Balance Guard
 
-- [ ] FR-13.1 — Create a reusable `ClearanceGuard` (service method or invokable class) that checks all of a student's clearances for the current term are `approved`. Return `422 { error: "CLEARANCE_INCOMPLETE" }` if any are not. Used by FR-18 and FR-19. (S)
-- [ ] FR-14.1 — Create a reusable `BalanceGuard` that checks `students.balance_centavos = 0`. Return `422 { error: "OUTSTANDING_BALANCE" }` if not. Used by FR-18 and FR-19. (S)
+- [x] FR-13.1 — Create a reusable `ClearanceGuard` (service method or invokable class) that checks all of a student's clearances for the current term are `approved`. Return `422 { error: "CLEARANCE_INCOMPLETE" }` if any are not. Used by FR-18 and FR-19. (S)
+- [x] FR-14.1 — Create a reusable `BalanceGuard` that checks `students.balance_centavos = 0`. Return `422 { error: "OUTSTANDING_BALANCE" }` if not. Used by FR-18 and FR-19. (S)
 
 #### FR-18 — Student Document Request
 
-- [ ] FR-18.1 — Create `POST /api/documents/requests`: run `ClearanceGuard` + `BalanceGuard`; create with `status=pending`. Return `201 { id, status: "pending" }`. (S)
-- [ ] FR-18.2 — Return `409 { error: "DUPLICATE_REQUEST" }` if an open request of the same `type` (pending/processing/ready) already exists (Edge Case 3). (S)
-- [ ] FR-18.3 — Return `422 VALIDATION_FAILED` for blank/whitespace-only `purpose` (Edge Case 7). (S)
-- [ ] FR-18.4 — Test: submit with incomplete clearance → 422; submit with balance > 0 → 422; submit when both clear → 201; second request of same type while first is open → 409. (M)
+- [x] FR-18.1 — Create `POST /api/documents/requests`: run `ClearanceGuard` + `BalanceGuard`; create with `status=pending`. Return `201 { id, status: "pending" }`. (S)
+- [x] FR-18.2 — Return `409 { error: "DUPLICATE_REQUEST" }` if an open request of the same `type` (pending/processing/ready) already exists (Edge Case 3). (S)
+- [x] FR-18.3 — Return `422 VALIDATION_FAILED` for blank/whitespace-only `purpose` (Edge Case 7). (S)
+- [x] FR-18.4 — Test: submit with incomplete clearance → 422; submit with balance > 0 → 422; submit when both clear → 201; second request of same type while first is open → 409. (M)
 
 #### FR-19 + FR-20 — Registrar Document Status Transitions
 
-- [ ] FR-19.1 — Create `PATCH /api/documents/requests/{id}/status`: validate the transition against the state machine (`pending→processing→ready→released`, `pending→rejected`, `processing→rejected`; terminal states block all transitions). Return `409 { error: "INVALID_TRANSITION" }` for invalid moves. (M)
-- [ ] FR-19.2 — Re-check `ClearanceGuard` + `BalanceGuard` only on transition into `released` (SPEC §5). (S)
-- [ ] FR-19.3 — Test: valid transitions succeed; `released→processing` returns 409; `released→released` returns 409; transitioning to `released` with incomplete clearance returns 422. (M)
-- [ ] FR-20.1 — Verify the student's next `GET` (via existing student profile or a new status endpoint) reflects the updated status — no push; pure polling (non-goal for notifications). (S)
+- [x] FR-19.1 — Create `PATCH /api/documents/requests/{id}/status`: validate the transition against the state machine (`pending→processing→ready→released`, `pending→rejected`, `processing→rejected`; terminal states block all transitions). Return `409 { error: "INVALID_TRANSITION" }` for invalid moves. (M)
+- [x] FR-19.2 — Re-check `ClearanceGuard` + `BalanceGuard` only on transition into `released` (SPEC §5). (S)
+- [x] FR-19.3 — Test: valid transitions succeed; `released→processing` returns 409; `released→released` returns 409; transitioning to `released` with incomplete clearance returns 422. (M)
+- [x] FR-20.1 — Verify the student's next `GET` (via existing student profile or a new status endpoint) reflects the updated status — no push; pure polling (non-goal for notifications). (S)
 
 #### FR-15 — Admin User Management
 
-- [ ] FR-15.1 — Create `POST /api/admin/users`: create user with hashed password; `department_id` required iff `role=department_staff`. Return `201 { id, role }`. (S)
-- [ ] FR-15.2 — Return `409 { error: "EMAIL_TAKEN" }` on duplicate email. (S)
-- [ ] FR-15.3 — Create `PATCH /api/admin/users/{id}`: update `role`, `department_id`, `is_active`; no hard-delete ever (FR-15). Return `200 { id, role, is_active }`. (S)
-- [ ] FR-15.4 — Return `404 { error: "USER_NOT_FOUND" }` for unknown user ID. (S)
-- [ ] FR-15.5 — Append `audit_logs` row on every create/edit/deactivation (FR-17 data model — the log write is wired here even if the read endpoint lands in Sprint 4). (S)
-- [ ] FR-15.6 — Test: admin deactivates active cashier; cashier's very next request with their still-valid token returns 403 `ACCOUNT_DEACTIVATED` (SPEC acceptance criteria FR-15 + Edge Case 6). (M)
-- [ ] FR-15.7 — Test: audit log row is written on user create and on `is_active` toggle. (S)
+- [x] FR-15.1 — Create `POST /api/admin/users`: create user with hashed password; `department_id` required iff `role=department_staff`. Return `201 { id, role }`. (S)
+- [x] FR-15.2 — Return `409 { error: "EMAIL_TAKEN" }` on duplicate email. (S)
+- [x] FR-15.3 — Create `PATCH /api/admin/users/{id}`: update `role`, `department_id`, `is_active`; no hard-delete ever (FR-15). Return `200 { id, role, is_active }`. (S)
+- [x] FR-15.4 — Return `404 { error: "USER_NOT_FOUND" }` for unknown user ID. (S)
+- [x] FR-15.5 — Append `audit_logs` row on every create/edit/deactivation (FR-17 data model — the log write is wired here even if the read endpoint lands in Sprint 4). (S)
+- [x] FR-15.6 — Test: admin deactivates active cashier; cashier's very next request with their still-valid token returns 403 `ACCOUNT_DEACTIVATED` (SPEC acceptance criteria FR-15 + Edge Case 6). (M)
+- [x] FR-15.7 — Test: audit log row is written on user create and on `is_active` toggle. (S)
 
 ### Definition of Done
 
-- [ ] Department staff can list and review their own clearances; cross-department patch returns 403.
-- [ ] Clearance is re-reviewable; subsequent PATCH overwrites with no error.
-- [ ] Student's document request blocked by incomplete clearance (422) and by balance > 0 (422); both clear → 201.
-- [ ] Duplicate open request of the same type → 409.
-- [ ] Blank `purpose` → 422.
-- [ ] Registrar can walk a request through valid states; terminal state transition → 409.
-- [ ] Admin creates a user; duplicate email → 409; deactivation is immediate on next request.
-- [ ] Audit log rows are written for every account change.
-- [ ] Pint passes.
+- [x] Department staff can list and review their own clearances; cross-department patch returns 403.
+- [x] Clearance is re-reviewable; subsequent PATCH overwrites with no error.
+- [x] Student's document request blocked by incomplete clearance (422) and by balance > 0 (422); both clear → 201.
+- [x] Duplicate open request of the same type → 409.
+- [x] Blank `purpose` → 422.
+- [x] Registrar can walk a request through valid states; terminal state transition → 409.
+- [x] Admin creates a user; duplicate email → 409; deactivation is immediate on next request.
+- [x] Audit log rows are written for every account change.
+- [x] Pint passes.
 
 ### Depends on
 

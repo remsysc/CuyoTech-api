@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\CashierController;
 use App\Http\Controllers\Department\DepartmentClearanceController;
+use App\Http\Controllers\Document\DocumentRequestController;
 use App\Http\Controllers\Registrar\RegistrarController;
 use App\Http\Controllers\Student\StudentPortalController;
 use Illuminate\Http\Request;
@@ -39,5 +41,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:department_staff')->prefix('department')->group(function () {
         Route::get('/clearances', [DepartmentClearanceController::class, 'index']);
         Route::patch('/clearances/{id}', [DepartmentClearanceController::class, 'update']);
+    });
+
+    // Document Requests (FR-18, FR-19, FR-20)
+    Route::middleware('role:student')->get('/documents/requests', [DocumentRequestController::class, 'index']);
+    Route::middleware('role:student')->post('/documents/requests', [DocumentRequestController::class, 'store']);
+    Route::middleware('role:registrar')->patch('/documents/requests/{id}/status', [DocumentRequestController::class, 'updateStatus']);
+
+    // Admin User Management (FR-15)
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::patch('/users/{id}', [AdminUserController::class, 'update']);
     });
 });
