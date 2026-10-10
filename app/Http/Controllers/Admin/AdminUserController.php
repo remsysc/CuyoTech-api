@@ -137,4 +137,70 @@ class AdminUserController extends Controller
             'is_active' => (bool) $user->is_active,
         ]);
     }
+
+    /**
+     * Admin password reset and immediate token revocation (FR-16 / A-5).
+     * Auth: role=admin
+     */
+    public function resetPassword(Request $request, int $id): JsonResponse
+    {
+        $user = User::find($id);
+        if (! $user) {
+            abort(404, 'USER_NOT_FOUND');
+        }
+
+        $validated = $request->validate([
+            'new_password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $user->password = Hash::make($validated['new_password']);
+        $user->save();
+
+        // Revoke all existing tokens for that user immediately (A-5)
+        $user->tokens()->delete();
+
+        // Append audit log
+        AuditLog::create([
+            'actor_id' => $request->user()->id,
+            'action' => 'user.password_reset',
+            'target_type' => 'user',
+            'target_id' => $user->id,
+            'changes' => [
+                'action' => 'tokens_revoked',
+            ],
+        ]);
+
+        return response()->json(null, 204);
+    }
+
+    /**
+     * Retrieve audit logs with optional filters (FR-17).
+     * Auth: role=admin
+     */
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $query = AuditLog::query()->orderByDesc('created_at')->orderByDesc('id');
+
+        if ($request->filled('actor_id')) {
+            $query->where('actor_id', (int) $request->query('actor_id'));
+        }
+
+        if ($request->filled('target_type')) {
+            $query->where('target_type', (string) $request->query('target_type'));
+        }
+
+        $perPage = 15;
+        $paginated = $query->paginate($perPage);
+
+        $items = collect($paginated->items())->map(fn (AuditLog $log): array => [
+            'actor_id' => (int) $log->actor_id,
+            'action' => $log->action,
+            'target_type' => $log->target_type,
+            'target_id' => (int) $log->target_id,
+            'changes' => $log->changes,
+            'created_at' => $log->created_at?->toIso8601String(),
+        ])->values();
+
+        return response()->json($items);
+    }
 }

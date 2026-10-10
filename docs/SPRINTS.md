@@ -213,40 +213,40 @@
 
 #### FR-7 — Course Roster (P1)
 
-- [ ] FR-7.1 — Create `GET /api/registrar/courses/{id}/roster`: accept required `school_year` + `semester`; return all enrolled students with their current grade/status. (S)
-- [ ] FR-7.2 — Return `404 { error: "COURSE_NOT_FOUND" }` for unknown course. (S)
-- [ ] FR-7.3 — Test: roster includes all enrolled students for the term; different-term enrollments don't appear. (S)
+- [x] FR-7.1 — Create `GET /api/registrar/courses/{id}/roster`: accept required `school_year` + `semester`; return all enrolled students with their current grade/status. (S)
+- [x] FR-7.2 — Return `404 { error: "COURSE_NOT_FOUND" }` for unknown course. (S)
+- [x] FR-7.3 — Test: roster includes all enrolled students for the term; different-term enrollments don't appear. (S)
 
 #### FR-10 — Payment History (P1)
 
-- [ ] FR-10.1 — Create `GET /api/cashier/students/{id}/payments`: return all payments newest-first; accessible by `role in (cashier, admin)`. (S)
-- [ ] FR-10.2 — Return `404 { error: "STUDENT_NOT_FOUND" }` for unknown student. (S)
-- [ ] FR-10.3 — Test: payments returned newest-first; non-cashier/admin role returns 403. (S)
+- [x] FR-10.1 — Create `GET /api/cashier/students/{id}/payments`: return all payments newest-first; accessible by `role in (cashier, admin)`. (S)
+- [x] FR-10.2 — Return `404 { error: "STUDENT_NOT_FOUND" }` for unknown student. (S)
+- [x] FR-10.3 — Test: payments returned newest-first; non-cashier/admin role returns 403. (S)
 
 #### FR-12 — Cross-Department Clearance View (P1)
 
-- [ ] FR-12.1 — Create `GET /api/students/{id}/clearances`: return clearances across all departments; accessible by `role in (department_staff, registrar, admin)` and the student themselves (self-only — return 403 for another student's ID). (S)
-- [ ] FR-12.2 — Test: student A token returns A's clearances; student A token for student B's ID returns 403; admin token returns any student's clearances. (S)
+- [x] FR-12.1 — Create `GET /api/students/{id}/clearances`: return clearances across all departments; accessible by `role in (department_staff, registrar, admin)` and the student themselves (self-only — return 403 for another student's ID). (S)
+- [x] FR-12.2 — Test: student A token returns A's clearances; student A token for student B's ID returns 403; admin token returns any student's clearances. (S)
 
 #### FR-16 — Admin Password Reset (P1)
 
-- [ ] FR-16.1 — Create `PATCH /api/admin/users/{id}/password`: replace the password hash and revoke all existing tokens for that user (A-5). Return 204. (S)
-- [ ] FR-16.2 — Test: after reset, all pre-existing tokens return 401; only a new login succeeds. (S)
+- [x] FR-16.1 — Create `PATCH /api/admin/users/{id}/password`: replace the password hash and revoke all existing tokens for that user (A-5). Return 204. (S)
+- [x] FR-16.2 — Test: after reset, all pre-existing tokens return 401; only a new login succeeds. (S)
 
 #### FR-17 — Audit Log Read (P2)
 
-- [ ] FR-17.1 — Create `GET /api/admin/audit-logs`: return paginated logs; support optional filters `actor_id`, `target_type`, `page`. (S)
-- [ ] FR-17.2 — Confirm audit rows written in FR-15.5 (Sprint 3) appear correctly in this response. (S)
-- [ ] FR-17.3 — Test: admin can retrieve logs; non-admin returns 403. (S)
+- [x] FR-17.1 — Create `GET /api/admin/audit-logs`: return paginated logs; support optional filters `actor_id`, `target_type`, `page`. (S)
+- [x] FR-17.2 — Confirm audit rows written in FR-15.5 (Sprint 3) appear correctly in this response. (S)
+- [x] FR-17.3 — Test: admin can retrieve logs; non-admin returns 403. (S)
 
 ### Definition of Done
 
-- [ ] Course roster returns all enrolled students for the specified term.
-- [ ] Payment history returns payments newest-first; 403 for wrong role.
-- [ ] Student's own clearances visible to self, dept staff, registrar, admin; another student's record → 403.
-- [ ] Password reset revokes all prior tokens immediately.
-- [ ] Audit log is paginated and filterable by admin only.
-- [ ] Pint passes.
+- [x] Course roster returns all enrolled students for the specified term.
+- [x] Payment history returns payments newest-first; 403 for wrong role.
+- [x] Student's own clearances visible to self, dept staff, registrar, admin; another student's record → 403.
+- [x] Password reset revokes all prior tokens immediately.
+- [x] Audit log is paginated and filterable by admin only.
+- [x] Pint passes.
 
 ### Depends on
 

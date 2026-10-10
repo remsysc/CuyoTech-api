@@ -72,4 +72,33 @@ class CashierController extends Controller
             ], 201);
         });
     }
+
+    /**
+     * Retrieve student payment history newest-first (FR-10).
+     * Auth: role in (cashier, admin)
+     */
+    public function payments(int|string $id): JsonResponse
+    {
+        $student = Student::whereKey((int) $id)->first();
+        if (! $student) {
+            return response()->json([
+                'error' => 'STUDENT_NOT_FOUND',
+            ], 404);
+        }
+
+        $payments = Payment::query()
+            ->where('student_id', $student->id)
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $data = $payments->map(fn (Payment $p): array => [
+            'or_number' => $p->or_number,
+            'amount_centavos' => (int) $p->amount_centavos,
+            'payment_type' => $p->payment_type,
+            'paid_at' => $p->paid_at->toIso8601String(),
+        ])->values();
+
+        return response()->json($data);
+    }
 }

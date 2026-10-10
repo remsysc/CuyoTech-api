@@ -116,4 +116,43 @@ class RegistrarController extends Controller
             'status' => 'completed',
         ], 200);
     }
+
+    /**
+     * Retrieve course roster for specified term (FR-7).
+     * Auth: role=registrar
+     */
+    public function roster(Request $request, int|string $id): JsonResponse
+    {
+        $request->validate([
+            'school_year' => ['required', 'string'],
+            'semester' => ['required', 'integer'],
+        ]);
+
+        $course = Course::whereKey((int) $id)->first();
+        if (! $course) {
+            return response()->json([
+                'error' => 'COURSE_NOT_FOUND',
+            ], 404);
+        }
+
+        $schoolYear = (string) $request->query('school_year');
+        $semester = (int) $request->query('semester');
+
+        $enrollments = Enrollment::query()
+            ->with(['student.user'])
+            ->where('course_id', $course->id)
+            ->where('school_year', $schoolYear)
+            ->where('semester', $semester)
+            ->get();
+
+        $data = $enrollments->map(fn (Enrollment $e): array => [
+            'student_id' => $e->student_id,
+            'student_number' => $e->student->student_number,
+            'name' => $e->student->user->name,
+            'grade' => $e->grade !== null ? (float) $e->grade : null,
+            'status' => $e->status,
+        ])->values();
+
+        return response()->json($data);
+    }
 }
