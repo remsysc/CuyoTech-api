@@ -153,16 +153,13 @@ class UserSeeder extends Seeder
 
             if ($student) {
                 // Update existing student and their user
-                $user = $student->user;
-                if ($user) {
-                    $user->update([
-                        'name' => $data['name'],
-                        'email' => $data['email'],
-                        'password' => Hash::make('password'),
-                        'role' => 'student',
-                        'is_active' => true,
-                    ]);
-                }
+                $student->user->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make('password'),
+                    'role' => 'student',
+                    'is_active' => true,
+                ]);
 
                 $student->update([
                     'program' => $data['program'],
