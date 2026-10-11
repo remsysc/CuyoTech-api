@@ -1,0 +1,59 @@
+services:
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: cuyotech-api
+        restart: unless-stopped
+        ports:
+            - '${API_PORT:-8000}:8000'
+        environment:
+            APP_NAME: 'CuyoTech SSIS'
+            APP_ENV: local
+            APP_DEBUG: 'true'
+            APP_URL: http://localhost:8000
+            FRONTEND_URL: http://localhost:3000
+            DB_CONNECTION: sqlite
+            DB_DATABASE: /var/www/html/database/database.sqlite
+            SESSION_DRIVER: database
+            CACHE_STORE: database
+            QUEUE_CONNECTION: database
+        volumes:
+            - .:/var/www/html
+            - api_vendor:/var/www/html/vendor
+        healthcheck:
+            test: ['CMD-SHELL', 'curl -sf http://localhost:8000/up || exit 1']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 20s
+        networks:
+            - cuyotech-network
+
+    frontend:
+        build:
+            context: ${FRONTEND_DIR:-../ssis-cuyotech}
+            dockerfile: Dockerfile
+        container_name: cuyotech-frontend
+        restart: unless-stopped
+        ports:
+            - '${FRONTEND_PORT:-3000}:3000'
+        environment:
+            NODE_ENV: development
+            VITE_PROXY_TARGET: http://api:8000
+        volumes:
+            - ${FRONTEND_DIR:-../ssis-cuyotech}:/app
+            - frontend_node_modules:/app/node_modules
+        depends_on:
+            api:
+                condition: service_healthy
+        networks:
+            - cuyotech-network
+
+volumes:
+    api_vendor:
+    frontend_node_modules:
+
+networks:
+    cuyotech-network:
+        driver: bridge
