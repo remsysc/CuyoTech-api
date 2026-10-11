@@ -1,0 +1,128 @@
+name: Staging to Main PR Automation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-fill-pr:
+    name: Auto Fill PR Title & Description
+    if: github.event.pull_request.head.ref == 'staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate and Update PR Title & Description
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullNumber = pr.number;
+
+            // Fetch all commits included in this PR
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner,
+              repo,
+              pull_number: pullNumber,
+              per_page: 100
+            });
+
+            // Group commits by conventional commit categories
+            const categories = {
+              features: { title: '🚀 Features & Capabilities', list: [] },
+              fixes: { title: '🐛 Bug Fixes & Patches', list: [] },
+              security: { title: '🔒 Security & Hardening', list: [] },
+              tests: { title: '🧪 Tests & Quality Assurance', list: [] },
+              refactor: { title: '⚡ Refactoring & Performance', list: [] },
+              docs: { title: '📚 Documentation', list: [] },
+              chores: { title: '🔧 Maintenance & Infrastructure', list: [] },
+              other: { title: '📦 General Updates', list: [] },
+            };
+
+            const authors = new Set();
+
+            for (const item of commits) {
+              const fullMsg = item.commit.message || '';
+              const firstLine = fullMsg.split('\n')[0].trim();
+              const sha = item.sha.substring(0, 7);
+              const authorName = item.author ? `@${item.author.login}` : (item.commit.author?.name || 'Contributor');
+              authors.add(authorName);
+
+              const entry = `- \`${sha}\` ${firstLine} (${authorName})`;
+
+              const lower = firstLine.toLowerCase();
+              if (lower.startsWith('feat')) {
+                categories.features.list.push(entry);
+              } else if (lower.startsWith('fix')) {
+                categories.fixes.list.push(entry);
+              } else if (lower.includes('security') || lower.includes('vuln') || lower.includes('auth')) {
+                categories.security.list.push(entry);
+              } else if (lower.startsWith('test')) {
+                categories.tests.list.push(entry);
+              } else if (lower.startsWith('refactor') || lower.startsWith('perf')) {
+                categories.refactor.list.push(entry);
+              } else if (lower.startsWith('docs')) {
+                categories.docs.list.push(entry);
+              } else if (lower.startsWith('chore') || lower.startsWith('ci') || lower.startsWith('build')) {
+                categories.chores.list.push(entry);
+              } else {
+                categories.other.list.push(entry);
+              }
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const targetTitle = `release: promote staging to main (${today})`;
+
+            let changelogMd = '';
+            for (const [key, cat] of Object.entries(categories)) {
+              if (cat.list.length > 0) {
+                changelogMd += `### ${cat.title}\n` + cat.list.join('\n') + '\n\n';
+              }
+            }
+
+            if (!changelogMd.trim()) {
+              changelogMd = '_No commit log entries detected._\n\n';
+            }
+
+            const authorList = Array.from(authors).join(', ') || 'Team';
+
+            const generatedBody = `## 🚢 Production Release: staging → main
+
+> **Automated Release PR** generated on **${today}**.
+> Promotes all verified changes from \`staging\` into \`main\` (**${commits.length} commits**).
+
+---
+
+## 📋 Included Changes
+
+${changelogMd}---
+
+## 👥 Contributors
+${authorList}
+
+---
+
+## 🛡️ Pre-Release Verification Checklist
+- [ ] Automated Pest test suite passing on \`staging\`
+- [ ] Laravel Pint code formatting verified
+- [ ] PHPStan static analysis level clean
+- [ ] Database migrations tested and rollback-safe
+- [ ] Approved by release leads for production deployment
+`;
+
+            console.log(`Auto-filling PR #${pullNumber} title and description...`);
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: pullNumber,
+              title: targetTitle,
+              body: generatedBody
+            });
+            console.log(`Successfully updated PR #${pullNumber}!`);
