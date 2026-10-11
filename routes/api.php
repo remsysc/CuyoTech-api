@@ -40,6 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cashier & Payments (FR-8, FR-10)
     Route::middleware('role:cashier')->prefix('cashier')->group(function () {
+        Route::get('/students', [CashierController::class, 'students']);
+        Route::get('/payments', [CashierController::class, 'index']);
         Route::post('/payments', [CashierController::class, 'recordPayment']);
     });
     Route::middleware('role:cashier,admin')->get('/cashier/students/{id}/payments', [CashierController::class, 'payments']);

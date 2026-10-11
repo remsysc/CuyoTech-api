@@ -101,4 +101,50 @@ class CashierController extends Controller
 
         return response()->json($data);
     }
+
+    /**
+     * List students with balance for cashier counter.
+     */
+    public function students(): JsonResponse
+    {
+        $students = Student::with('user')->orderBy('student_number')->get();
+
+        $data = $students->map(fn (Student $s): array => [
+            'id' => $s->id,
+            'student_number' => $s->student_number,
+            'name' => $s->user?->name ?? 'Student',
+            'email' => $s->user?->email,
+            'balance_centavos' => (int) $s->balance_centavos,
+            'balance_formatted' => $s->balance_formatted,
+        ]);
+
+        return response()->json($data);
+    }
+
+    /**
+     * List recent payments across all students for cashier dashboard.
+     */
+    public function index(): JsonResponse
+    {
+        $payments = Payment::with(['student.user', 'cashier'])
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        $data = $payments->map(fn (Payment $p): array => [
+            'id' => $p->id,
+            'or_number' => $p->or_number,
+            'student_id' => $p->student_id,
+            'student_number' => $p->student?->student_number,
+            'student_name' => $p->student?->user?->name ?? 'Student',
+            'cashier_name' => $p->cashier?->name,
+            'amount_centavos' => (int) $p->amount_centavos,
+            'amount_formatted' => $p->amount_formatted,
+            'payment_type' => $p->payment_type,
+            'paid_at' => $p->paid_at->toIso8601String(),
+        ]);
+
+        return response()->json($data);
+    }
 }
