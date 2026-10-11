@@ -25,7 +25,7 @@ class DepartmentClearanceController extends Controller
         }
 
         $query = Clearance::query()
-            ->with('student')
+            ->with(['student.user'])
             ->where('department_id', $user->department_id);
 
         if ($request->filled('status')) {
@@ -39,9 +39,12 @@ class DepartmentClearanceController extends Controller
             'id' => $c->id,
             'student_id' => $c->student_id,
             'student_number' => $c->student->student_number,
+            'student_name' => $c->student->user->name ?? 'Student #'.$c->student_id,
             'school_year' => $c->school_year,
             'semester' => (int) $c->semester,
             'status' => $c->status,
+            'remarks' => $c->remarks,
+            'reviewed_at' => $c->reviewed_at?->toIso8601String(),
         ])->values();
 
         return response()->json($data);

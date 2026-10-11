@@ -1,0 +1,12 @@
+.git
+.github
+.agents
+vendor
+node_modules
+public/build
+public/hot
+storage/*.key
+.env
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Department;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,59 @@ use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
+    /**
+     * List user accounts with optional role, search, or status filtering.
+     * Auth: role=admin
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = User::query()->with('department')->orderBy('name');
+
+        if ($request->filled('role')) {
+            $query->where('role', (string) $request->query('role'));
+        }
+
+        if ($request->filled('is_active')) {
+            $isActive = filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($isActive !== null) {
+                $query->where('is_active', $isActive);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = (string) $request->query('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->get()->map(fn (User $u): array => [
+            'id' => $u->id,
+            'name' => $u->name,
+            'email' => $u->email,
+            'role' => $u->role,
+            'department_id' => $u->department_id,
+            'department_name' => $u->department?->name,
+            'department_code' => $u->department?->code,
+            'is_active' => (bool) $u->is_active,
+            'created_at' => $u->created_at?->toIso8601String(),
+        ])->values();
+
+        return response()->json($users);
+    }
+
+    /**
+     * List departments for user assignment.
+     * Auth: role=admin
+     */
+    public function departments(): JsonResponse
+    {
+        $departments = Department::query()->orderBy('name')->get(['id', 'code', 'name']);
+
+        return response()->json($departments);
+    }
+
     /**
      * Create a new user account.
      * Auth: role=admin
