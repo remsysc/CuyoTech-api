@@ -27,11 +27,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/grades', [StudentPortalController::class, 'grades']);
     });
 
-    // Registrar (FR-5, FR-6, FR-7)
+    // Registrar (FR-5, FR-6, FR-7, FR-19)
     Route::middleware('role:registrar')->prefix('registrar')->group(function () {
+        Route::get('/courses', [RegistrarController::class, 'courses']);
+        Route::get('/students', [RegistrarController::class, 'students']);
+        Route::get('/enrollments', [RegistrarController::class, 'enrollments']);
         Route::post('/enrollments', [RegistrarController::class, 'enroll']);
         Route::patch('/enrollments/{id}/grade', [RegistrarController::class, 'encodeGrade']);
         Route::get('/courses/{id}/roster', [RegistrarController::class, 'roster']);
+        Route::get('/document-requests', [RegistrarController::class, 'documentRequests']);
     });
 
     // Cashier & Payments (FR-8, FR-10)

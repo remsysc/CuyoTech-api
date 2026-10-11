@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\DocumentRequest;
 use App\Models\Enrollment;
 use App\Models\Student;
 use Illuminate\Http\JsonResponse;
@@ -152,6 +153,107 @@ class RegistrarController extends Controller
             'grade' => $e->grade !== null ? (float) $e->grade : null,
             'status' => $e->status,
         ])->values();
+
+        return response()->json($data);
+    }
+
+    /**
+     * List courses for registrar catalog.
+     */
+    public function courses(): JsonResponse
+    {
+        $courses = Course::with('department')->orderBy('code')->get();
+
+        $data = $courses->map(fn (Course $c): array => [
+            'id' => $c->id,
+            'code' => $c->code,
+            'title' => $c->title,
+            'units' => $c->units,
+            'department_id' => $c->department_id,
+            'department_name' => $c->department?->name,
+        ]);
+
+        return response()->json($data);
+    }
+
+    /**
+     * List students with account balance for registrar enrollment.
+     */
+    public function students(): JsonResponse
+    {
+        $students = Student::with('user')->orderBy('student_number')->get();
+
+        $data = $students->map(fn (Student $s): array => [
+            'id' => $s->id,
+            'student_number' => $s->student_number,
+            'name' => $s->user?->name ?? 'Student',
+            'email' => $s->user?->email,
+            'balance_centavos' => (int) $s->balance_centavos,
+            'balance_formatted' => $s->balance_formatted,
+        ]);
+
+        return response()->json($data);
+    }
+
+    /**
+     * List all enrollments for registrar grade overview.
+     */
+    public function enrollments(Request $request): JsonResponse
+    {
+        $query = Enrollment::with(['student.user', 'course']);
+
+        if ($request->filled('school_year')) {
+            $query->where('school_year', $request->query('school_year'));
+        }
+
+        if ($request->filled('semester')) {
+            $query->where('semester', (int) $request->query('semester'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        $enrollments = $query->orderByDesc('id')->get();
+
+        $data = $enrollments->map(fn (Enrollment $e): array => [
+            'id' => $e->id,
+            'student_id' => $e->student_id,
+            'student_number' => $e->student?->student_number,
+            'student_name' => $e->student?->user?->name ?? 'Student',
+            'course_id' => $e->course_id,
+            'course_code' => $e->course?->code,
+            'course_title' => $e->course?->title,
+            'units' => $e->course?->units ?? 0,
+            'school_year' => $e->school_year,
+            'semester' => (int) $e->semester,
+            'grade' => $e->grade !== null ? (float) $e->grade : null,
+            'status' => $e->status,
+        ]);
+
+        return response()->json($data);
+    }
+
+    /**
+     * List document requests for registrar management.
+     */
+    public function documentRequests(): JsonResponse
+    {
+        $requests = DocumentRequest::with(['student.user'])
+            ->orderByDesc('requested_at')
+            ->get();
+
+        $data = $requests->map(fn (DocumentRequest $d): array => [
+            'id' => $d->id,
+            'student_id' => $d->student_id,
+            'student_number' => $d->student?->student_number,
+            'student_name' => $d->student?->user?->name ?? 'Student',
+            'type' => $d->type,
+            'purpose' => $d->purpose,
+            'status' => $d->status,
+            'requested_at' => $d->requested_at?->toIso8601String(),
+            'released_at' => $d->released_at?->toIso8601String(),
+        ]);
 
         return response()->json($data);
     }
