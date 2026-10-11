@@ -56,9 +56,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin User Management, Password Reset & Audit Logs (FR-15, FR-16, FR-17)
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users', [AdminUserController::class, 'store']);
         Route::patch('/users/{id}', [AdminUserController::class, 'update']);
         Route::patch('/users/{id}/password', [AdminUserController::class, 'resetPassword']);
+        Route::get('/departments', [AdminUserController::class, 'departments']);
         Route::get('/audit-logs', [AdminUserController::class, 'auditLogs']);
     });
 });
