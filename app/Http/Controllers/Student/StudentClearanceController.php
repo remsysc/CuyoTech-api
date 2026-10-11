@@ -25,7 +25,10 @@ class StudentClearanceController extends Controller
             ], 401);
         }
 
-        $student = Student::whereKey((int) $id)->first();
+        $student = ($id === 'me' && $user->role === 'student')
+            ? $user->student
+            : (Student::whereKey((int) $id)->first() ?? Student::where('student_number', (string) $id)->first());
+
         if (! $student) {
             return response()->json([
                 'error' => 'STUDENT_NOT_FOUND',
