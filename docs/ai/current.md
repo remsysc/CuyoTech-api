@@ -7,11 +7,11 @@
 
 - **Infrastructure & Containerization:** Root `compose.yaml` in API repo orchestrates both `cuyotech-api` (PHP 8.4 Alpine) and `ssis-cuyotech` (Node 22 Alpine). Container entrypoints automate `.env` setup, `APP_KEY` generation, SQLite database initialization, Composer/npm volume caching, database migrations, seeders, and healthchecks (`/up`).
 - **Seeders (Pamantasan ng Cabuyao):** Comprehensive curriculum offerings across 6 academic colleges (CCS, COE, CBAA, COED, CAS, CHAS) and 4 administrative offices (LIB, OSA, RO, CASH). Authentic Filipino student profiles (Juan Miguel Dela Cruz, Maria Clara Santos, etc.) with enrollments, grades, multi-office clearances, and payment ledgers.
-- **Backend API Endpoints:** All 20 Functional Requirements implemented and verified across 6 core deliverable modules:
+- **Backend API Endpoints:** All 22 Functional Requirements implemented and verified across 6 core deliverable modules:
     - Core Auth (`/api/login`, `/api/logout`, `/api/user`)
-    - Student Portal (`/api/student/profile`, `/api/student/subjects`, `/api/student/grades`)
+    - Student Portal (`/api/student/profile`, `/api/student/subjects`, `/api/student/grades`, `/api/student/payments`, `/api/student/queue`, `/api/student/queue/presence`)
     - Registrar Module (`/api/registrar/courses`, `/api/registrar/students`, `/api/registrar/enrollments`, `/api/registrar/enrollments/{id}/grade`, `/api/registrar/courses/{id}/roster`, `/api/registrar/document-requests`)
-    - Cashier Module (`/api/cashier/students`, `/api/cashier/payments`, `/api/cashier/students/{id}/payments`, `/receipts/{or_number}`)
+    - Cashier Module (`/api/cashier/students`, `/api/cashier/payments`, `/api/cashier/students/{id}/payments`, `/api/cashier/queue`, `/api/cashier/queue/call-next`, `/api/cashier/queue/{id}/status`, `/receipts/{or_number}`)
     - Department Clearance Module (`/api/department/clearances`, `/api/department/clearances/{id}`, `/api/students/{id}/clearances`)
     - Admin Module (`/api/admin/users`, `/api/admin/users/{id}`, `/api/admin/users/{id}/password`, `/api/admin/departments`, `/api/admin/audit-logs`)
     - Document Requests (`/api/documents/requests`, `ClearanceGuard`, `BalanceGuard`)
@@ -32,8 +32,8 @@
 
 ## Current test snapshot
 
-- **Backend:** 325 tests passed, 1,196 assertions (`php artisan test --compact`), Level 8 PHPStan clean (0 errors), Pint code style clean.
-- **Frontend:** 68 tests passed across 22 suites (`npm test`), ESLint clean (0 errors), Vite production build clean.
+- **Backend:** 331 tests passed, 1,242 assertions (`php artisan test --compact`), Level 8 PHPStan clean (0 errors), Pint code style clean.
+- **Frontend:** 70 tests passed across 22 suites (`npm test`), ESLint clean (0 errors), Vite production build clean.
 - **Remote CI:** All GitHub Actions pipelines passed on promoted topic, staging, and release PR branches.
 
 ## Source-of-truth documents

@@ -1,5 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -e
+
+# Sanitize carriage returns from environment files if mounted from Windows
+[ -f /var/www/html/.env ] && sed -i 's/\r$//' /var/www/html/.env 2>/dev/null || true
+[ -f /var/www/html/.env.example ] && sed -i 's/\r$//' /var/www/html/.env.example 2>/dev/null || true
 
 echo "==================================================="
 echo "  CuyoTech SSIS API - Container Initialization    "
@@ -72,6 +76,7 @@ php artisan migrate --force
 
 # 8. Automated database seeding (seed if empty or if FORCE_SEED is true)
 USER_COUNT=$(php artisan tinker --execute 'try { echo \App\Models\User::count(); } catch (\Throwable $e) { echo "0"; }' 2>/dev/null || echo "0")
+USER_COUNT=$(echo "$USER_COUNT" | tr -d '\r' | tr -d '[:space:]')
 if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ] || [ "$FORCE_SEED" = "true" ] || [ "$FORCE_SEED" = "1" ]; then
     echo "[Init] Seeding database with official curriculum and users..."
     php artisan db:seed --force

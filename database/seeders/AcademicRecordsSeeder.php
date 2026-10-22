@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\CashierQueue;
 use App\Models\Clearance;
 use App\Models\Course;
 use App\Models\Department;
@@ -300,6 +301,87 @@ class AcademicRecordsSeeder extends Seeder
                     'status' => 'processing',
                     'requested_at' => Carbon::parse('2026-10-09 14:15:00'),
                     'processed_by' => null,
+                ]
+            );
+        }
+
+        // =========================================================================
+        // 5. Cashier Window Queue & Student Presence (FR-21, FR-22)
+        // =========================================================================
+        $today = now()->toDateString();
+
+        if ($juan && $cashier) {
+            CashierQueue::updateOrCreate(
+                ['queue_date' => $today, 'sequence_number' => 1],
+                [
+                    'queue_number' => 'C-001',
+                    'student_id' => $juan->id,
+                    'amount_centavos' => 35000,
+                    'payment_type' => 'misc_fee',
+                    'status' => 'completed',
+                    'is_present' => true,
+                    'checked_in_at' => now()->subMinutes(45),
+                    'called_at' => now()->subMinutes(40),
+                    'completed_at' => now()->subMinutes(35),
+                    'called_by' => $cashier->id,
+                    'or_number' => 'OR-2026-00512844',
+                ]
+            );
+        }
+
+        if ($maria && $cashier) {
+            CashierQueue::updateOrCreate(
+                ['queue_date' => $today, 'sequence_number' => 2],
+                [
+                    'queue_number' => 'C-002',
+                    'student_id' => $maria->id,
+                    'amount_centavos' => 75000,
+                    'payment_type' => 'tuition',
+                    'status' => 'serving',
+                    'is_present' => true,
+                    'checked_in_at' => now()->subMinutes(20),
+                    'called_at' => now()->subMinutes(5),
+                    'completed_at' => null,
+                    'called_by' => $cashier->id,
+                    'or_number' => null,
+                ]
+            );
+        }
+
+        if ($crisostomo) {
+            CashierQueue::updateOrCreate(
+                ['queue_date' => $today, 'sequence_number' => 3],
+                [
+                    'queue_number' => 'C-003',
+                    'student_id' => $crisostomo->id,
+                    'amount_centavos' => 250000,
+                    'payment_type' => 'tuition',
+                    'status' => 'waiting',
+                    'is_present' => true,
+                    'checked_in_at' => now()->subMinutes(10),
+                    'called_at' => null,
+                    'completed_at' => null,
+                    'called_by' => null,
+                    'or_number' => null,
+                ]
+            );
+        }
+
+        if ($joshua) {
+            CashierQueue::updateOrCreate(
+                ['queue_date' => $today, 'sequence_number' => 4],
+                [
+                    'queue_number' => 'C-004',
+                    'student_id' => $joshua->id,
+                    'amount_centavos' => 15000,
+                    'payment_type' => 'document_fee',
+                    'status' => 'waiting',
+                    'is_present' => false,
+                    'checked_in_at' => null,
+                    'called_at' => null,
+                    'completed_at' => null,
+                    'called_by' => null,
+                    'or_number' => null,
                 ]
             );
         }

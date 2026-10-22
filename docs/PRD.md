@@ -79,11 +79,13 @@ The system delivers six core interactive modules:
 
 ### 3. Cashier Module
 
-| ID    | Requirement                                                    | Priority |
-| ----- | -------------------------------------------------------------- | -------- |
-| FR-8  | A cashier can record a payment against a student.              | P0       |
-| FR-9  | The system provides a stable, printable receipt after payment. | P0       |
-| FR-10 | A cashier can view a student's payment history.                | P1       |
+| ID    | Requirement                                                                                                                                                     | Priority |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-8  | A cashier can record a payment against a student.                                                                                                               | P0       |
+| FR-9  | The system provides a stable, printable receipt after payment.                                                                                                  | P0       |
+| FR-10 | A cashier can view a student's payment history.                                                                                                                 | P1       |
+| FR-21 | A student can request a consecutive daily Cashier queue number (`C-001`, `C-002`, ...) and check in as physically present (`is_present`) at the Cashier window. | P1       |
+| FR-22 | A cashier can monitor live queue presence (`Present at Window` vs. `En Route`), call the next physically present student, and auto-complete tickets on payment. | P1       |
 
 ### 4. Department Module
 

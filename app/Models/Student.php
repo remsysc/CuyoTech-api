@@ -80,4 +80,12 @@ class Student extends Model
     {
         return $this->hasMany(DocumentRequest::class);
     }
+
+    /**
+     * @return HasMany<CashierQueue, $this>
+     */
+    public function cashierQueues(): HasMany
+    {
+        return $this->hasMany(CashierQueue::class);
+    }
 }

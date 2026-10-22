@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\CashierQueue;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\User;
@@ -64,6 +65,25 @@ class CashierController extends Controller
             $lockedStudent = Student::whereKey($student->id)->lockForUpdate()->first();
             if ($lockedStudent) {
                 $lockedStudent->decrement('balance_centavos', $amount);
+            }
+
+            $activeQueue = CashierQueue::query()
+                ->where('student_id', $student->id)
+                ->whereIn('status', ['waiting', 'serving'])
+                ->orderBy('sequence_number')
+                ->lockForUpdate()
+                ->first();
+
+            if ($activeQueue) {
+                $activeQueue->update([
+                    'status' => 'completed',
+                    'is_present' => true,
+                    'checked_in_at' => $activeQueue->checked_in_at ?? now(),
+                    'called_at' => $activeQueue->called_at ?? now(),
+                    'completed_at' => now(),
+                    'called_by' => $cashier->id,
+                    'or_number' => $orNumber,
+                ]);
             }
 
             return response()->json([

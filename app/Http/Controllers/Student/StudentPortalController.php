@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
+use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -108,5 +109,43 @@ class StudentPortalController extends Controller
         ])->values();
 
         return response()->json($data);
+    }
+
+    /**
+     * Retrieve authenticated student's balance and payment ledger newest-first.
+     */
+    public function payments(Request $request): JsonResponse
+    {
+        $user = $request->user() ?? $request->user('sanctum');
+        $student = $user?->student;
+
+        if (! $student) {
+            return response()->json([
+                'error' => 'UNAUTHORIZED_ROLE',
+            ], 403);
+        }
+
+        $payments = $student->payments()
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $items = $payments->map(fn (Payment $p): array => [
+            'id' => $p->id,
+            'or_number' => $p->or_number,
+            'amount_centavos' => (int) $p->amount_centavos,
+            'amount_formatted' => $p->amount_formatted,
+            'payment_type' => $p->payment_type,
+            'paid_at' => $p->paid_at->toIso8601String(),
+            'receipt_url' => "/receipts/{$p->or_number}",
+        ])->values();
+
+        return response()->json([
+            'student_id' => $student->id,
+            'student_number' => $student->student_number,
+            'balance_centavos' => (int) $student->balance_centavos,
+            'balance_formatted' => $student->balance_formatted,
+            'payments' => $items,
+        ]);
     }
 }
