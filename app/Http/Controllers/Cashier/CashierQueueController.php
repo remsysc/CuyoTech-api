@@ -26,7 +26,7 @@ class CashierQueueController extends Controller
             'student_id' => $q->student_id,
             'student_number' => $q->student->student_number,
             'student_name' => $q->student->user->name,
-            'student_balance_centavos' => (int) $q->student->balance_centavos,
+            'student_balance_centavos' => max(0, (int) $q->student->balance_centavos),
             'student_balance_formatted' => $q->student->balance_formatted,
             'amount_centavos' => (int) $q->amount_centavos,
             'amount_formatted' => $q->amount_formatted,
