@@ -1,31 +1,44 @@
 # CuyoTech SSIS — Current Context
 
-**Snapshot date:** 2026-10-06
-**Current work:** Sprint 2 Completed — Student Portal + Registrar + Cashier
+**Snapshot date:** 2026-10-12
+**Current work:** Sprints 1–5 Deliverables Complete — Decoupled Architecture, PRD/SPEC/SPRINT Alignment, and Full 6-Module Operational Verification
 
 ## Implementation status observed
 
-- **Foundation/auth:** login and logout routes, Sanctum, role/active-account middleware, migrations, models, and supporting factories are present.
-- **API contracts & error envelopes:** `bootstrap/app.php` standardizes JSON error responses to match `docs/SPEC.md` §5 (`VALIDATION_FAILED` with `fields`, `UNAUTHENTICATED`, `UNAUTHORIZED_ROLE`, `RATE_LIMITED`, `CONFLICT`, `NOT_FOUND`). Verified by `ErrorEnvelopeTest.php`.
-- **Currency formatting & schema:** integer centavos remain canonical across database and input payloads; `App\Support\Money::format()` and accessors (`Student::balance_formatted`, `Payment::amount_formatted`) provide display formatting (`MoneyTest.php`). `students.user_id` foreign key updated to `cascadeOnDelete()`.
-- **Student portal:** profile, subjects, and grades routes/controllers are present and verified.
-- **Registrar/cashier/receipts:** `POST /api/registrar/enrollments`, `PATCH /api/registrar/enrollments/{id}/grade`, `POST /api/cashier/payments`, and `GET /receipts/{or_number}` are implemented and fully verified against E2E tiers 1-4.
+- **Infrastructure & Containerization:** Root `compose.yaml` in API repo orchestrates both `cuyotech-api` (PHP 8.4 Alpine) and `ssis-cuyotech` (Node 22 Alpine). Container entrypoints automate `.env` setup, `APP_KEY` generation, SQLite database initialization, Composer/npm volume caching, database migrations, seeders, and healthchecks (`/up`).
+- **Seeders (Pamantasan ng Cabuyao):** Comprehensive curriculum offerings across 6 academic colleges (CCS, COE, CBAA, COED, CAS, CHAS) and 4 administrative offices (LIB, OSA, RO, CASH). Authentic Filipino student profiles (Juan Miguel Dela Cruz, Maria Clara Santos, etc.) with enrollments, grades, multi-office clearances, and payment ledgers.
+- **Backend API Endpoints:** All 20 Functional Requirements implemented and verified across 6 core deliverable modules:
+    - Core Auth (`/api/login`, `/api/logout`, `/api/user`)
+    - Student Portal (`/api/student/profile`, `/api/student/subjects`, `/api/student/grades`)
+    - Registrar Module (`/api/registrar/courses`, `/api/registrar/students`, `/api/registrar/enrollments`, `/api/registrar/enrollments/{id}/grade`, `/api/registrar/courses/{id}/roster`, `/api/registrar/document-requests`)
+    - Cashier Module (`/api/cashier/students`, `/api/cashier/payments`, `/api/cashier/students/{id}/payments`, `/receipts/{or_number}`)
+    - Department Clearance Module (`/api/department/clearances`, `/api/department/clearances/{id}`, `/api/students/{id}/clearances`)
+    - Admin Module (`/api/admin/users`, `/api/admin/users/{id}`, `/api/admin/users/{id}/password`, `/api/admin/departments`, `/api/admin/audit-logs`)
+    - Document Requests (`/api/documents/requests`, `ClearanceGuard`, `BalanceGuard`)
+- **Frontend SPA Client (`ssis-cuyotech`):** Sibling repository running React 19 + Vite 8.
+    - **Modern University Portal UI:** Split-screen login page with institutional navy and gold theming, registrar pillars, quick role switcher, and demo personas (`Demo (Cleared)` and `Demo (With Holds)`).
+    - **All 6 Deliverable Portals:** Fully implemented for Student, Registrar, Cashier, Department, and Admin.
+    - **Official Branding:** Vector CuyoTech seal logo in `public/favicon.svg` and `index.html`.
+- **Release Promotion PRs:**
+    - Backend: [remsysc/CuyoTech-api#29](https://github.com/remsysc/CuyoTech-api/pull/29) (`staging -> main`) — **Merged**.
+    - Frontend: [Suizei1906/ssis-cuyotech#28](https://github.com/Suizei1906/ssis-cuyotech/pull/28) (`staging -> main`) — **Merged**.
 
 ## Important technical facts
 
-- Laravel `^13.17`, PHP `^8.3`, Pest `^5.2` (`composer.json`).
-- React/Inertia is part of this repository; the frontend is not a separate repository.
-- SQLite is the configured default for local/testing. A production database has not been selected.
-- Money is represented as integer centavos; role and active status are checked server-side.
+- Laravel `^13.17`, PHP `^8.3` (tested on 8.4 and 8.5), Pest `^5.2`.
+- Decoupled architecture: pure Laravel REST API backend (`cuyotech-api`) and standalone React 19 SPA frontend (`ssis-cuyotech`), proxied via `VITE_PROXY_TARGET=http://api:8000`.
+- SQLite is the zero-config default database for local and container runtimes (`database/database.sqlite`).
+- Money is represented canonically as integer centavos; role and account status checks enforced server-side.
 
 ## Current test snapshot
 
-- Complete test suite: 269 tests passed, 901 assertions (`php artisan test --compact`).
-- E2E contract suite: 103 tests passed, 349 assertions (`vendor/bin/pest tests/Feature/E2E --compact`).
+- **Backend:** 325 tests passed, 1,196 assertions (`php artisan test --compact`), Level 8 PHPStan clean (0 errors), Pint code style clean.
+- **Frontend:** 68 tests passed across 22 suites (`npm test`), ESLint clean (0 errors), Vite production build clean.
+- **Remote CI:** All GitHub Actions pipelines passed on promoted topic, staging, and release PR branches.
 
 ## Source-of-truth documents
 
-- Product scope: `docs/PRD.md`
+- Product scope & deliverables: `docs/PRD.md`
 - Technical/data/API contract: `docs/SPEC.md`
 - Work sequencing/status: `docs/SPRINTS.md`
 - Test strategy: `docs/TEST_PLAN.md`

@@ -2,12 +2,12 @@
 
 > Status: Draft | Version: 1.2 | Updated: 2026-10-01
 > This is the single source of truth for the intended data model, API contracts, and technical behavior. See `PRD.md` for product goals and scope; see `SPRINTS.md` for task status.
-> Confirmed repository baseline: Laravel `^13.17`, PHP `^8.3`, Pest `^5.2`; React/Inertia is in this repository. SQLite is the configured local/test default. Production database selection remains open.
+> Confirmed repository baseline: Laravel `^13.17`, PHP `^8.3`, Pest `^5.2`. The system operates as a decoupled architecture: a Laravel REST API backend (`cuyotech-api`) and a standalone React 19 SPA frontend (`ssis-cuyotech`). SQLite is the configured local/test default. Production database selection remains open.
 > Any behavior not covered here is an open question, not a green light to assume.
 
 ## 1. Scope
 
-This spec covers the SSIS prototype's Laravel application and shared data model: Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules. React/Inertia is part of this repository. Endpoints under `/api` return JSON; web routes outside `/api` may render user-facing pages such as the printable receipt. Section 4 owns the data model, §5 owns the API contracts, and §6 records edge cases.
+This spec covers the SSIS application and shared data model: Student Portal, Registrar, Cashier, Department, Admin, and Document Request modules. The frontend is delivered as a standalone React SPA client (`ssis-cuyotech`). Endpoints under `/api` return JSON; web routes outside `/api` render user-facing pages such as the printable receipt. Section 4 owns the data model, §5 owns the API contracts, and §6 records edge cases.
 
 ## 2. Non-Goals
 
