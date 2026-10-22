@@ -46,7 +46,7 @@ class Student extends Model
 
     public function getBalanceFormattedAttribute(): string
     {
-        return Money::format((int) $this->balance_centavos);
+        return Money::format(max(0, (int) $this->balance_centavos));
     }
 
     public function user(): BelongsTo
@@ -79,5 +79,13 @@ class Student extends Model
     public function documentRequests(): HasMany
     {
         return $this->hasMany(DocumentRequest::class);
+    }
+
+    /**
+     * @return HasMany<CashierQueue, $this>
+     */
+    public function cashierQueues(): HasMany
+    {
+        return $this->hasMany(CashierQueue::class);
     }
 }

@@ -1,5 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -e
+
+# Sanitize carriage returns from environment files if mounted from Windows
+[ -f /var/www/html/.env ] && sed -i 's/\r$//' /var/www/html/.env 2>/dev/null || true
+[ -f /var/www/html/.env.example ] && sed -i 's/\r$//' /var/www/html/.env.example 2>/dev/null || true
 
 echo "==================================================="
 echo "  CuyoTech SSIS API - Container Initialization    "
@@ -32,11 +36,26 @@ mkdir -p /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 chmod 777 /var/www/html/database 2>/dev/null || true
 
-# 4. Ensure SQLite database file exists
-if [ ! -f /var/www/html/database/database.sqlite ]; then
-    echo "[Init] Initializing database/database.sqlite..."
-    touch /var/www/html/database/database.sqlite
-    chmod 666 /var/www/html/database/database.sqlite 2>/dev/null || true
+# 4. Ensure database connectivity or SQLite file setup
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+    if [ ! -f /var/www/html/database/database.sqlite ]; then
+        echo "[Init] Initializing database/database.sqlite..."
+        touch /var/www/html/database/database.sqlite
+        chmod 666 /var/www/html/database/database.sqlite 2>/dev/null || true
+    fi
+elif [ "$DB_CONNECTION" = "pgsql" ]; then
+    echo "[Init] Waiting for PostgreSQL database connection (${DB_HOST:-postgres}:${DB_PORT:-5432})..."
+    RETRY_COUNT=0
+    MAX_RETRIES=30
+    until pg_isready -h "${DB_HOST:-postgres}" -p "${DB_PORT:-5432}" -U "${DB_USERNAME:-cuyotech}" -d "${DB_DATABASE:-cuyotech_ssis}" >/dev/null 2>&1 || [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; do
+        sleep 1
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+    if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+        echo "[Init] Warning: PostgreSQL not immediately reachable, attempting migrate anyway..."
+    else
+        echo "[Init] PostgreSQL is ready and accepting connections."
+    fi
 fi
 
 # 5. Automated Composer dependencies installation
@@ -57,6 +76,7 @@ php artisan migrate --force
 
 # 8. Automated database seeding (seed if empty or if FORCE_SEED is true)
 USER_COUNT=$(php artisan tinker --execute 'try { echo \App\Models\User::count(); } catch (\Throwable $e) { echo "0"; }' 2>/dev/null || echo "0")
+USER_COUNT=$(echo "$USER_COUNT" | tr -d '\r' | tr -d '[:space:]')
 if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ] || [ "$FORCE_SEED" = "true" ] || [ "$FORCE_SEED" = "1" ]; then
     echo "[Init] Seeding database with official curriculum and users..."
     php artisan db:seed --force
@@ -72,4 +92,4 @@ php artisan route:clear
 echo "==================================================="
 echo "  Starting Laravel API server on 0.0.0.0:8000     "
 echo "==================================================="
-exec php artisan serve --host=0.0.0.0 --port=8000
+exec php artisan serve --host=0.0.0.0 --port=8000 --no-reload
