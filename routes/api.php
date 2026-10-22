@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\CashierController;
+use App\Http\Controllers\Cashier\CashierQueueController;
 use App\Http\Controllers\Department\DepartmentClearanceController;
 use App\Http\Controllers\Document\DocumentRequestController;
 use App\Http\Controllers\Registrar\RegistrarController;
@@ -25,18 +26,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [StudentPortalController::class, 'profile']);
         Route::get('/subjects', [StudentPortalController::class, 'subjects']);
         Route::get('/grades', [StudentPortalController::class, 'grades']);
+        Route::get('/payments', [StudentPortalController::class, 'payments']);
+        Route::get('/queue', [CashierQueueController::class, 'studentStatus']);
+        Route::post('/queue', [CashierQueueController::class, 'joinQueue']);
+        Route::patch('/queue/presence', [CashierQueueController::class, 'updatePresence']);
+        Route::delete('/queue', [CashierQueueController::class, 'cancelQueue']);
     });
 
-    // Registrar (FR-5, FR-6, FR-7)
+    // Registrar (FR-5, FR-6, FR-7, FR-19)
     Route::middleware('role:registrar')->prefix('registrar')->group(function () {
+        Route::get('/courses', [RegistrarController::class, 'courses']);
+        Route::get('/students', [RegistrarController::class, 'students']);
+        Route::get('/enrollments', [RegistrarController::class, 'enrollments']);
         Route::post('/enrollments', [RegistrarController::class, 'enroll']);
         Route::patch('/enrollments/{id}/grade', [RegistrarController::class, 'encodeGrade']);
         Route::get('/courses/{id}/roster', [RegistrarController::class, 'roster']);
+        Route::get('/document-requests', [RegistrarController::class, 'documentRequests']);
     });
 
-    // Cashier & Payments (FR-8, FR-10)
+    // Cashier & Payments (FR-8, FR-10, FR-21, FR-22)
     Route::middleware('role:cashier')->prefix('cashier')->group(function () {
+        Route::get('/students', [CashierController::class, 'students']);
+        Route::get('/payments', [CashierController::class, 'index']);
         Route::post('/payments', [CashierController::class, 'recordPayment']);
+        Route::get('/queue', [CashierQueueController::class, 'index']);
+        Route::post('/queue/call-next', [CashierQueueController::class, 'callNext']);
+        Route::patch('/queue/{id}/status', [CashierQueueController::class, 'updateStatus']);
     });
     Route::middleware('role:cashier,admin')->get('/cashier/students/{id}/payments', [CashierController::class, 'payments']);
 

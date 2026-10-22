@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\CashierQueue;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\User;
@@ -66,6 +67,25 @@ class CashierController extends Controller
                 $lockedStudent->decrement('balance_centavos', $amount);
             }
 
+            $activeQueue = CashierQueue::query()
+                ->where('student_id', $student->id)
+                ->whereIn('status', ['waiting', 'serving'])
+                ->orderBy('sequence_number')
+                ->lockForUpdate()
+                ->first();
+
+            if ($activeQueue) {
+                $activeQueue->update([
+                    'status' => 'completed',
+                    'is_present' => true,
+                    'checked_in_at' => $activeQueue->checked_in_at ?? now(),
+                    'called_at' => $activeQueue->called_at ?? now(),
+                    'completed_at' => now(),
+                    'called_by' => $cashier->id,
+                    'or_number' => $orNumber,
+                ]);
+            }
+
             return response()->json([
                 'or_number' => $orNumber,
                 'receipt_url' => "/receipts/{$orNumber}",
@@ -98,6 +118,52 @@ class CashierController extends Controller
             'payment_type' => $p->payment_type,
             'paid_at' => $p->paid_at->toIso8601String(),
         ])->values();
+
+        return response()->json($data);
+    }
+
+    /**
+     * List students with balance for cashier counter.
+     */
+    public function students(): JsonResponse
+    {
+        $students = Student::with('user')->orderBy('student_number')->get();
+
+        $data = $students->map(fn (Student $s): array => [
+            'id' => $s->id,
+            'student_number' => $s->student_number,
+            'name' => $s->user->name,
+            'email' => $s->user->email,
+            'balance_centavos' => (int) $s->balance_centavos,
+            'balance_formatted' => $s->balance_formatted,
+        ]);
+
+        return response()->json($data);
+    }
+
+    /**
+     * List recent payments across all students for cashier dashboard.
+     */
+    public function index(): JsonResponse
+    {
+        $payments = Payment::with(['student.user', 'cashier'])
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        $data = $payments->map(fn (Payment $p): array => [
+            'id' => $p->id,
+            'or_number' => $p->or_number,
+            'student_id' => $p->student_id,
+            'student_number' => $p->student->student_number,
+            'student_name' => $p->student->user->name,
+            'cashier_name' => $p->cashier->name,
+            'amount_centavos' => (int) $p->amount_centavos,
+            'amount_formatted' => $p->amount_formatted,
+            'payment_type' => $p->payment_type,
+            'paid_at' => $p->paid_at->toIso8601String(),
+        ]);
 
         return response()->json($data);
     }
