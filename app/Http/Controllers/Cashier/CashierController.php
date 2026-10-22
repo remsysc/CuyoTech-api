@@ -112,8 +112,8 @@ class CashierController extends Controller
         $data = $students->map(fn (Student $s): array => [
             'id' => $s->id,
             'student_number' => $s->student_number,
-            'name' => $s->user?->name ?? 'Student',
-            'email' => $s->user?->email,
+            'name' => $s->user->name,
+            'email' => $s->user->email,
             'balance_centavos' => (int) $s->balance_centavos,
             'balance_formatted' => $s->balance_formatted,
         ]);
@@ -136,9 +136,9 @@ class CashierController extends Controller
             'id' => $p->id,
             'or_number' => $p->or_number,
             'student_id' => $p->student_id,
-            'student_number' => $p->student?->student_number,
-            'student_name' => $p->student?->user?->name ?? 'Student',
-            'cashier_name' => $p->cashier?->name,
+            'student_number' => $p->student->student_number,
+            'student_name' => $p->student->user->name,
+            'cashier_name' => $p->cashier->name,
             'amount_centavos' => (int) $p->amount_centavos,
             'amount_formatted' => $p->amount_formatted,
             'payment_type' => $p->payment_type,

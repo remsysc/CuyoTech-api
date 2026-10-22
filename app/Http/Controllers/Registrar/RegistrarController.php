@@ -170,7 +170,7 @@ class RegistrarController extends Controller
             'title' => $c->title,
             'units' => $c->units,
             'department_id' => $c->department_id,
-            'department_name' => $c->department?->name,
+            'department_name' => $c->department->name,
         ]);
 
         return response()->json($data);
@@ -186,8 +186,8 @@ class RegistrarController extends Controller
         $data = $students->map(fn (Student $s): array => [
             'id' => $s->id,
             'student_number' => $s->student_number,
-            'name' => $s->user?->name ?? 'Student',
-            'email' => $s->user?->email,
+            'name' => $s->user->name,
+            'email' => $s->user->email,
             'balance_centavos' => (int) $s->balance_centavos,
             'balance_formatted' => $s->balance_formatted,
         ]);
@@ -219,12 +219,12 @@ class RegistrarController extends Controller
         $data = $enrollments->map(fn (Enrollment $e): array => [
             'id' => $e->id,
             'student_id' => $e->student_id,
-            'student_number' => $e->student?->student_number,
-            'student_name' => $e->student?->user?->name ?? 'Student',
+            'student_number' => $e->student->student_number,
+            'student_name' => $e->student->user->name,
             'course_id' => $e->course_id,
-            'course_code' => $e->course?->code,
-            'course_title' => $e->course?->title,
-            'units' => $e->course?->units ?? 0,
+            'course_code' => $e->course->code,
+            'course_title' => $e->course->title,
+            'units' => $e->course->units,
             'school_year' => $e->school_year,
             'semester' => (int) $e->semester,
             'grade' => $e->grade !== null ? (float) $e->grade : null,
@@ -246,12 +246,12 @@ class RegistrarController extends Controller
         $data = $requests->map(fn (DocumentRequest $d): array => [
             'id' => $d->id,
             'student_id' => $d->student_id,
-            'student_number' => $d->student?->student_number,
-            'student_name' => $d->student?->user?->name ?? 'Student',
+            'student_number' => $d->student->student_number,
+            'student_name' => $d->student->user->name,
             'type' => $d->type,
             'purpose' => $d->purpose,
             'status' => $d->status,
-            'requested_at' => $d->requested_at?->toIso8601String(),
+            'requested_at' => $d->requested_at->toIso8601String(),
             'released_at' => $d->released_at?->toIso8601String(),
         ]);
 
