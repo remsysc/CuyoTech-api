@@ -12,7 +12,11 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-cuyotech} -d ${DB_DATABASE:-cuyotech_ssis} || exit 1']
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U ${DB_USERNAME:-cuyotech} -d ${DB_DATABASE:-cuyotech_ssis} || exit 1',
+                ]
             interval: 5s
             timeout: 5s
             retries: 10
@@ -26,7 +30,13 @@ services:
             dockerfile: Dockerfile
         container_name: cuyotech-api
         restart: unless-stopped
-        entrypoint: ["/bin/bash", "-c", "sed -i 's/\\r$$//' /var/www/html/docker/entrypoint.sh 2>/dev/null; chmod +x /var/www/html/docker/entrypoint.sh 2>/dev/null; exec /bin/bash /var/www/html/docker/entrypoint.sh \"$$@\"", "--"]
+        entrypoint:
+            [
+                '/bin/bash',
+                '-c',
+                "sed -i 's/\\r$$//' /var/www/html/docker/entrypoint.sh 2>/dev/null; chmod +x /var/www/html/docker/entrypoint.sh 2>/dev/null; exec /bin/bash /var/www/html/docker/entrypoint.sh \"$$@\"",
+                '--',
+            ]
         ports:
             - '${API_PORT:-8000}:8000'
         environment:
@@ -65,7 +75,13 @@ services:
             dockerfile: Dockerfile
         container_name: cuyotech-frontend
         restart: unless-stopped
-        entrypoint: ["/bin/sh", "-c", "sed -i 's/\\r$$//' /app/docker-entrypoint.sh 2>/dev/null; chmod +x /app/docker-entrypoint.sh 2>/dev/null; exec /bin/sh /app/docker-entrypoint.sh \"$$@\"", "--"]
+        entrypoint:
+            [
+                '/bin/sh',
+                '-c',
+                "sed -i 's/\\r$$//' /app/docker-entrypoint.sh 2>/dev/null; chmod +x /app/docker-entrypoint.sh 2>/dev/null; exec /bin/sh /app/docker-entrypoint.sh \"$$@\"",
+                '--',
+            ]
         ports:
             - '${FRONTEND_PORT:-3000}:3000'
         environment:
