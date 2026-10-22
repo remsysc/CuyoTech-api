@@ -143,7 +143,7 @@ class StudentPortalController extends Controller
         return response()->json([
             'student_id' => $student->id,
             'student_number' => $student->student_number,
-            'balance_centavos' => (int) $student->balance_centavos,
+            'balance_centavos' => max(0, (int) $student->balance_centavos),
             'balance_formatted' => $student->balance_formatted,
             'payments' => $items,
         ]);

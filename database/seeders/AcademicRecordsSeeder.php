@@ -354,7 +354,7 @@ class AcademicRecordsSeeder extends Seeder
                 [
                     'queue_number' => 'C-003',
                     'student_id' => $crisostomo->id,
-                    'amount_centavos' => 250000,
+                    'amount_centavos' => 150000,
                     'payment_type' => 'tuition',
                     'status' => 'waiting',
                     'is_present' => true,

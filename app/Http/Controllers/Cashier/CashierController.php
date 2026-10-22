@@ -134,7 +134,7 @@ class CashierController extends Controller
             'student_number' => $s->student_number,
             'name' => $s->user->name,
             'email' => $s->user->email,
-            'balance_centavos' => (int) $s->balance_centavos,
+            'balance_centavos' => max(0, (int) $s->balance_centavos),
             'balance_formatted' => $s->balance_formatted,
         ]);
 

@@ -117,7 +117,7 @@ class UserSeeder extends Seeder
                 'program' => 'BS Computer Science',
                 'year_level' => 3,
                 'status' => 'active',
-                'balance_centavos' => 0,
+                'balance_centavos' => 15000, // ₱150.00
             ],
             [
                 'name' => 'Bea Patricia Villanueva',
