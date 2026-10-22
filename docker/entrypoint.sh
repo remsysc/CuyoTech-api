@@ -92,4 +92,4 @@ php artisan route:clear
 echo "==================================================="
 echo "  Starting Laravel API server on 0.0.0.0:8000     "
 echo "==================================================="
-exec php artisan serve --host=0.0.0.0 --port=8000
+exec php artisan serve --host=0.0.0.0 --port=8000 --no-reload
