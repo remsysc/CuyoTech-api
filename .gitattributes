@@ -1,5 +1,16 @@
 * text=auto eol=lf
 
+# Force LF for shell scripts, Docker, compose, and environment files
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile* text eol=lf
+compose*.yaml text eol=lf
+compose*.yml text eol=lf
+docker-compose*.yaml text eol=lf
+docker-compose*.yml text eol=lf
+.env* text eol=lf
+artisan text eol=lf
+
 *.blade.php diff=html
 *.css diff=css
 *.html diff=html
