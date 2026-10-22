@@ -30,7 +30,7 @@ The system delivers six core interactive modules:
 - **Decoupled Architecture:** The system consists of a Laravel 13 REST API backend (`cuyotech-api`, PHP `^8.3`) providing endpoints under `/api` (plus web routes for printable receipts) and a standalone React 19 + Vite 8 SPA frontend client (`ssis-cuyotech`).
 - **Containerization:** Orchestrated via Docker Compose (`compose.yaml`) with automated setup, healthchecks, and environment seeding.
 - **Authentication & Security:** API authentication uses Laravel Sanctum bearer tokens; authorization and role boundaries (`student`, `registrar`, `cashier`, `department_staff`, `admin`) are enforced server-side on every request.
-- **Database:** SQLite is the zero-configuration default database for local development, testing, and container environments (`database/database.sqlite`).
+- **Database:** PostgreSQL running in a Podman container (`cuyotech-postgres`, database `cuyotech_ssis`) is the primary runtime database for development and containerized deployments, with SQLite retained for in-memory automated test suite execution.
 - **Money Handling:** Monetary values are canonically stored and calculated as integer centavos, never floating-point numbers.
 
 ## Goals
@@ -120,7 +120,6 @@ The system delivers six core interactive modules:
 
 ## Decisions still requiring confirmation
 
-- Which database engine, if any, is required for production deployment beyond the current SQLite default.
 - Whether CuyoTech's actual grading scale matches the provisional scale in `SPEC.md`.
 - How current-term clearance records are generated in bulk for new academic terms.
 - Whether course sections or scheduling timeslots are required beyond course units in future iterations.

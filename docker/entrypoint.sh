@@ -32,11 +32,26 @@ mkdir -p /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 chmod 777 /var/www/html/database 2>/dev/null || true
 
-# 4. Ensure SQLite database file exists
-if [ ! -f /var/www/html/database/database.sqlite ]; then
-    echo "[Init] Initializing database/database.sqlite..."
-    touch /var/www/html/database/database.sqlite
-    chmod 666 /var/www/html/database/database.sqlite 2>/dev/null || true
+# 4. Ensure database connectivity or SQLite file setup
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+    if [ ! -f /var/www/html/database/database.sqlite ]; then
+        echo "[Init] Initializing database/database.sqlite..."
+        touch /var/www/html/database/database.sqlite
+        chmod 666 /var/www/html/database/database.sqlite 2>/dev/null || true
+    fi
+elif [ "$DB_CONNECTION" = "pgsql" ]; then
+    echo "[Init] Waiting for PostgreSQL database connection (${DB_HOST:-postgres}:${DB_PORT:-5432})..."
+    RETRY_COUNT=0
+    MAX_RETRIES=30
+    until pg_isready -h "${DB_HOST:-postgres}" -p "${DB_PORT:-5432}" -U "${DB_USERNAME:-cuyotech}" -d "${DB_DATABASE:-cuyotech_ssis}" >/dev/null 2>&1 || [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; do
+        sleep 1
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+    if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+        echo "[Init] Warning: PostgreSQL not immediately reachable, attempting migrate anyway..."
+    else
+        echo "[Init] PostgreSQL is ready and accepting connections."
+    fi
 fi
 
 # 5. Automated Composer dependencies installation

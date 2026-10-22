@@ -2,7 +2,7 @@
 
 > Status: Draft | Version: 1.2 | Updated: 2026-10-01
 > This is the single source of truth for the intended data model, API contracts, and technical behavior. See `PRD.md` for product goals and scope; see `SPRINTS.md` for task status.
-> Confirmed repository baseline: Laravel `^13.17`, PHP `^8.3`, Pest `^5.2`. The system operates as a decoupled architecture: a Laravel REST API backend (`cuyotech-api`) and a standalone React 19 SPA frontend (`ssis-cuyotech`). SQLite is the configured local/test default. Production database selection remains open.
+> Confirmed repository baseline: Laravel `^13.17`, PHP `^8.3`, Pest `^5.2`. The system operates as a decoupled architecture: a Laravel REST API backend (`cuyotech-api`) and a standalone React 19 SPA frontend (`ssis-cuyotech`). PostgreSQL running on Podman is the primary runtime database, with SQLite retained for fast in-memory test isolation.
 > Any behavior not covered here is an open question, not a green light to assume.
 
 ## 1. Scope

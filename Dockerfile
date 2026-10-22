@@ -10,6 +10,8 @@ RUN apk add --no-cache \
     git \
     icu-dev \
     libzip-dev \
+    postgresql-client \
+    postgresql-dev \
     sqlite \
     sqlite-dev \
     unzip \
@@ -19,6 +21,8 @@ RUN apk add --no-cache \
 RUN docker-php-ext-install \
     bcmath \
     pcntl \
+    pdo_pgsql \
+    pgsql \
     zip
 
 # Copy Composer binary from official Composer image

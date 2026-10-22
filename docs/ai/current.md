@@ -27,7 +27,7 @@
 
 - Laravel `^13.17`, PHP `^8.3` (tested on 8.4 and 8.5), Pest `^5.2`.
 - Decoupled architecture: pure Laravel REST API backend (`cuyotech-api`) and standalone React 19 SPA frontend (`ssis-cuyotech`), proxied via `VITE_PROXY_TARGET=http://api:8000`.
-- SQLite is the zero-config default database for local and container runtimes (`database/database.sqlite`).
+- PostgreSQL running on a Podman container (`cuyotech-postgres`, database `cuyotech_ssis`) is the primary runtime database for development and containerized deployments; SQLite is retained for fast in-memory test isolation.
 - Money is represented canonically as integer centavos; role and account status checks enforced server-side.
 
 ## Current test snapshot
